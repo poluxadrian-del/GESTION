@@ -401,7 +401,6 @@ export default function ClientesPage() {
           setClientesValidos([])
           setErroresValidacion([])
         }}
-        loading={importando}
       />
     </div>
   )
