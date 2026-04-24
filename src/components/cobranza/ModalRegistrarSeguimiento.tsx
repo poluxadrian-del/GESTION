@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { seguimientoFormSchema, type SeguimientoFormInput } from '@/validations/seguimiento'
 import { useSeguimientos } from '@/hooks/useSeguimientos'
 import { useAuthStore } from '@/store/authStore'
-import type { Pago, Seguimiento } from '@/types'
+import type { Pago } from '@/types'
 
 interface ModalRegistrarSeguimientoProps {
   pago: Pago

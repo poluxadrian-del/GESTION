@@ -11,7 +11,6 @@ interface ModalImportarClientesProps {
   gestores: Gestor[]
   onImportar: (clientes: ClienteExcelRow[], gestorSeleccionado?: string) => Promise<void>
   onCancel: () => void
-  loading?: boolean
 }
 
 export default function ModalImportarClientes({
@@ -20,8 +19,7 @@ export default function ModalImportarClientes({
   erroresValidacion,
   gestores,
   onImportar,
-  onCancel,
-  loading = false
+  onCancel
 }: ModalImportarClientesProps) {
   const [gestorSeleccionado, setGestorSeleccionado] = useState<string>('')
   const [importando, setImportando] = useState(false)

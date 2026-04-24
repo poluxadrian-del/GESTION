@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import type { Cliente } from '@/types';
 
 export interface ClienteExcelRow {
   numero_contrato?: string;
