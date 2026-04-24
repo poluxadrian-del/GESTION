@@ -242,6 +242,9 @@ export default function ClientesPage() {
       setShowImportModal(false)
       setClientesValidos([])
       setErroresValidacion([])
+    } catch (error) {
+      console.error('Error al importar clientes:', error)
+      toast.error('Error al importar clientes')
     }
   }
 
