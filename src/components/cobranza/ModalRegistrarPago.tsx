@@ -51,23 +51,20 @@ export default function ModalRegistrarPago({
       setGestoresLoading(true)
       const data = await obtenerGestores(true)
       setGestores(data)
-      // Después de cargar gestores, actualiza el gestor_id si es necesario
+      setGestoresLoading(false)
+    }
+    loadGestores()
+  }, [obtenerGestores])
+
+  // Actualizar gestor_id cuando pago o cliente cambie, después de que los gestores hayan cargado
+  useEffect(() => {
+    if (gestores.length > 0) {
       const gestorId = pago.gestor_id || cliente?.gestor_id
       if (gestorId) {
         setValue('gestor_id', gestorId)
       }
-      setGestoresLoading(false)
     }
-    loadGestores()
-  }, [obtenerGestores, pago.gestor_id, cliente?.gestor_id, setValue])
-
-  // Actualizar gestor_id cuando pago o cliente cambie
-  useEffect(() => {
-    const gestorId = pago.gestor_id || cliente?.gestor_id
-    if (gestorId) {
-      setValue('gestor_id', gestorId)
-    }
-  }, [pago.gestor_id, cliente?.gestor_id, setValue])
+  }, [gestores, pago.gestor_id, cliente?.gestor_id, setValue])
 
   const onSubmit = async (data: RegistrarPagoInput | EditarPagoInput) => {
     let success = false

@@ -30,7 +30,6 @@ export default function ClienteForm({
     formState: { errors, isSubmitting },
     reset,
     control,
-    setValue,
   } = useForm<any>({
     defaultValues: cliente ? {
       nombre_completo: cliente.nombre_completo,
@@ -74,17 +73,13 @@ export default function ClienteForm({
     const loadGestores = async () => {
       const data = await obtenerGestores()
       setGestores(data)
-      // Después de cargar gestores, actualiza el gestor_id si existe cliente
-      if (cliente?.gestor_id) {
-        setValue('gestor_id', cliente.gestor_id)
-      }
     }
     loadGestores()
-  }, [obtenerGestores, cliente?.gestor_id, setValue])
+  }, [obtenerGestores])
 
-  // Actualizar formulario cuando cambia el cliente editado
+  // Actualizar formulario cuando cambia el cliente editado - después de que gestores están listos
   useEffect(() => {
-    if (cliente) {
+    if (cliente && gestores.length > 0) {
       reset({
         nombre_completo: cliente.nombre_completo,
         telefono_celular: cliente.telefono_celular || '',
@@ -109,10 +104,8 @@ export default function ClienteForm({
         notas: cliente.notas || '',
         monto_pago: cliente.monto_pago || 0,
       })
-      // Después de hacer reset, asegurar que gestor_id tenga el valor correcto
-      setValue('gestor_id', cliente.gestor_id)
     }
-  }, [cliente, reset, setValue])
+  }, [cliente, gestores.length, reset])
 
   const onSubmitForm = async (data: any) => {
     try {

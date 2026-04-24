@@ -324,6 +324,7 @@ export default function CobranzaPage() {
       {selectedPago && (
         <ModalRegistrarPago
           pago={selectedPago}
+          cliente={selectedPago.cliente as any}
           onClose={() => setSelectedPago(null)}
           onSuccess={handleSeguimientoRegistered}
         />
