@@ -31,7 +31,6 @@ export default function ClientesPage() {
   const [clientesValidos, setClientesValidos] = useState<ClienteExcelRow[]>([])
   const [erroresValidacion, setErroresValidacion] = useState<{ fila: number; error: string }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [importando, setImportando] = useState(false)
 
   // Cargar clientes al montar
   useEffect(() => {
@@ -161,7 +160,6 @@ export default function ClientesPage() {
   }
 
   const handleImportarClientes = async (clientesAImportar: ClienteExcelRow[], gestorSeleccionado?: string) => {
-    setImportando(true)
     let exitosos = 0
     let errores = 0
 
@@ -244,8 +242,6 @@ export default function ClientesPage() {
       setShowImportModal(false)
       setClientesValidos([])
       setErroresValidacion([])
-    } finally {
-      setImportando(false)
     }
   }
 
