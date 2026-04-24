@@ -33,11 +33,19 @@ const convertirFechaExcel = (valor: any): string => {
     return new Date().toISOString().split('T')[0];
   }
 
+  // Si es un objeto Date (XLSX ya lo convirtió automáticamente)
+  if (valor instanceof Date) {
+    // Usar zona horaria local para evitar desfases con Supabase
+    const year = valor.getFullYear();
+    const month = String(valor.getMonth() + 1).padStart(2, '0');
+    const day = String(valor.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // Si ya es una cadena de fecha válida, devolverla
   if (typeof valor === 'string') {
     // Verificar si es una fecha ISO válida
-    const fechaTest = new Date(valor);
-    if (!isNaN(fechaTest.getTime()) && valor.includes('-')) {
+    if (valor.includes('-') && /^\d{4}-\d{2}-\d{2}/.test(valor)) {
       return valor.split('T')[0];
     }
     
@@ -52,17 +60,22 @@ const convertirFechaExcel = (valor: any): string => {
 
   // Si es un número (serie de Excel)
   if (typeof valor === 'number') {
-    // Excel cuenta desde 1900-01-01, JavaScript desde 1970-01-01
-    // La diferencia es de 25569 días (más 1 por el bug de febrero de 1900 en Excel)
-    const excelEpoch = new Date(1900, 0, 1);
-    const jsEpoch = new Date(1970, 0, 1);
-    const dayDifference = Math.round((jsEpoch.getTime() - excelEpoch.getTime()) / (24 * 60 * 60 * 1000));
+    // Excel cuenta desde 1900-01-01 (day 1)
+    // 25568 es la diferencia correcta en días entre 1900-01-01 y 1970-01-01
+    // (incluye el bug de Excel que cuenta 1900 como bisiesto)
+    const EXCEL_EPOCH_OFFSET = 25568;
     
-    const fecha = new Date((valor - dayDifference) * 24 * 60 * 60 * 1000);
+    const diasDesdeEpoch = valor - EXCEL_EPOCH_OFFSET;
+    const milisegundos = diasDesdeEpoch * 24 * 60 * 60 * 1000;
+    const fecha = new Date(milisegundos);
     
     // Validar que la fecha sea válida
     if (!isNaN(fecha.getTime())) {
-      return fecha.toISOString().split('T')[0];
+      // Usar zona horaria local (no UTC) para que Supabase lo guarde correctamente
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+      const day = String(fecha.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
   }
 
