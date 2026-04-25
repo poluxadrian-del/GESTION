@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,19 +8,25 @@ import { loginSchema, type LoginInput } from '@/validations/auth'
 export default function LoginPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const { login } = useAuthStore()
+  const { login, usuario } = useAuthStore()
   const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   })
+
+  // Cuando el usuario esté autenticado, navegar a dashboard
+  useEffect(() => {
+    if (usuario) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [usuario, navigate])
 
   const onSubmit = async (data: LoginInput) => {
     setLoading(true)
     try {
       await login(data.email, data.password)
-      navigate('/clientes')
+      // El useEffect anterior se encargará de la navegación cuando usuario se actualice
     } catch (error) {
       // El error ya es manejado por el authStore
-    } finally {
       setLoading(false)
     }
   }

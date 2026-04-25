@@ -78,13 +78,24 @@ export const useAuthStore = create<AuthState>((set) => ({
         .single();
 
       if (error) {
-        throw new Error('No se encontraron datos del usuario');
-      }
+        // Si no encuentra el usuario en la tabla, intenta por email
+        const { data: userByEmail, error: emailError } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('email', user.email)
+          .single();
 
-      set({ usuario: userData, loading: false });
+        if (emailError) {
+          throw new Error('No se encontraron datos del usuario');
+        }
+
+        set({ usuario: userByEmail, loading: false });
+      } else {
+        set({ usuario: userData, loading: false });
+      }
     } catch (error) {
       const message = handleSupabaseError(error);
-      set({ error: message, loading: false });
+      set({ error: message, usuario: null, loading: false });
     }
   },
 

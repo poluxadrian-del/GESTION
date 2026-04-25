@@ -11,11 +11,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate()
 
   useEffect(() => {
+    // Solo redirigir si ya terminó de cargar y NO hay usuario
     if (!loading && !usuario) {
-      navigate('/login')
+      navigate('/login', { replace: true })
     }
   }, [usuario, loading, navigate])
 
+  // Mientras está cargando, mostrar loading
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -27,5 +29,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
+  // Si terminó de cargar y hay usuario, mostrar contenido
+  // Si terminó de cargar y NO hay usuario, el effect anterior redirigirá al login
   return usuario ? <>{children}</> : null
 }
