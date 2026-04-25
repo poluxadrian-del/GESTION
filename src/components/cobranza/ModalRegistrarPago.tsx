@@ -5,8 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { registrarPagoSchema, editarPagoSchema, type RegistrarPagoInput, type EditarPagoInput } from '@/validations/pago'
 import { usePagos } from '@/hooks/usePagos'
 import { useGestores } from '@/hooks/useGestores'
+import { useAuthStore } from '@/store/authStore'
 import type { Pago, Gestor, Cliente } from '@/types'
 import { formatCurrency } from '@/utils/formatters'
+import toast from 'react-hot-toast'
 
 interface ModalRegistrarPagoProps {
   pago: Pago
@@ -21,10 +23,22 @@ export default function ModalRegistrarPago({
   onClose,
   onSuccess,
 }: ModalRegistrarPagoProps) {
+  const { usuario } = useAuthStore()
   const [gestores, setGestores] = useState<Gestor[]>([])
   const [gestoresLoading, setGestoresLoading] = useState(false)
   const { registrarPago, editarPago } = usePagos()
   const { obtenerGestores } = useGestores()
+  
+  // Verificar permisos
+  const canRegister = usuario?.rol !== 'supervisor'
+
+  // Si es supervisor, mostrar mensaje y cerrar
+  useEffect(() => {
+    if (!canRegister) {
+      toast.error('No tienes permisos para registrar pagos')
+      setTimeout(onClose, 1500)
+    }
+  }, [canRegister, onClose])
   
   // Detectar si es edición o registro
   const esEdicion = pago.estado === 'pagado'

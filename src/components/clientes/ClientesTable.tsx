@@ -8,6 +8,7 @@ interface ClientesTableProps {
   onSelectCliente: (cliente: Cliente) => void
   onEditCliente: (cliente: Cliente) => void
   onViewCalendar: (cliente: Cliente) => void
+  canEdit?: boolean
 }
 
 export default function ClientesTable({
@@ -16,6 +17,7 @@ export default function ClientesTable({
   onSelectCliente,
   onEditCliente,
   onViewCalendar,
+  canEdit = true,
 }: ClientesTableProps) {
   if (loading) {
     return (
@@ -77,8 +79,13 @@ export default function ClientesTable({
                   </button>
                   <button
                     onClick={() => onEditCliente(cliente)}
-                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"
-                    title="Editar"
+                    disabled={!canEdit}
+                    className={`p-2 rounded-lg transition-colors ${
+                      canEdit
+                        ? 'hover:bg-blue-50 text-blue-600 cursor-pointer'
+                        : 'text-gray-300 cursor-not-allowed'
+                    }`}
+                    title={canEdit ? 'Editar' : 'No tienes permisos para editar'}
                   >
                     <Edit2 size={18} />
                   </button>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Plus, Search, Download } from 'lucide-react'
 import { useClientes } from '@/hooks/useClientes'
 import { useGestores } from '@/hooks/useGestores'
+import { useAuthStore } from '@/store/authStore'
 import type { Cliente, EstadoCliente } from '@/types'
 import ClientesTable from '@/components/clientes/ClientesTable'
 import ClienteForm from '@/components/clientes/ClienteForm'
@@ -16,6 +17,7 @@ import toast from 'react-hot-toast'
 export default function ClientesPage() {
   const { obtenerClientes, crearCliente, actualizarCliente, generarCalendarioPagosCliente, loading } = useClientes()
   const { obtenerGestores } = useGestores()
+  const { usuario } = useAuthStore()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [gestores, setGestores] = useState<any[]>([])
   const [search, setSearch] = useState('')
@@ -31,6 +33,10 @@ export default function ClientesPage() {
   const [clientesValidos, setClientesValidos] = useState<ClienteExcelRow[]>([])
   const [erroresValidacion, setErroresValidacion] = useState<{ fila: number; error: string }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Determinar permisos basados en rol
+  const canEditClientes = usuario?.rol !== 'supervisor'
+  const canImportClientes = usuario?.rol !== 'supervisor'
 
   // Cargar clientes al montar
   useEffect(() => {
@@ -95,6 +101,10 @@ export default function ClientesPage() {
   }
 
   const handleEditCliente = (cliente: Cliente) => {
+    if (!canEditClientes) {
+      toast.error('No tienes permisos para editar clientes')
+      return
+    }
     setEditingCliente(cliente)
     setShowFormModal(true)
   }
@@ -127,10 +137,19 @@ export default function ClientesPage() {
   }
 
   const handleImportarExcel = () => {
+    if (!canImportClientes) {
+      toast.error('No tienes permisos para importar clientes')
+      return
+    }
     fileInputRef.current?.click()
   }
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canImportClientes) {
+      toast.error('No tienes permisos para importar clientes')
+      return
+    }
+    
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -160,6 +179,11 @@ export default function ClientesPage() {
   }
 
   const handleImportarClientes = async (clientesAImportar: ClienteExcelRow[], gestorSeleccionado?: string) => {
+    if (!canImportClientes) {
+      toast.error('No tienes permisos para importar clientes')
+      return
+    }
+    
     let exitosos = 0
     let errores = 0
 
@@ -266,14 +290,26 @@ export default function ClientesPage() {
           />
           <button
             onClick={handleImportarExcel}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+            disabled={!canImportClientes}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              canImportClientes
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={!canImportClientes ? 'No tienes permisos para importar clientes' : ''}
           >
             <Download size={18} />
             Importar Excel
           </button>
           <button
             onClick={handleOpenNewForm}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+            disabled={!canEditClientes}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              canEditClientes
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={!canEditClientes ? 'No tienes permisos para crear clientes' : ''}
           >
             <Plus size={18} />
             Nuevo cliente
@@ -318,6 +354,7 @@ export default function ClientesPage() {
         onSelectCliente={handleSelectCliente}
         onEditCliente={handleEditCliente}
         onViewCalendar={handleViewCalendar}
+        canEdit={canEditClientes}
       />
 
       {/* Modal Formulario */}

@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { usePagos } from '@/hooks/usePagos'
+import { useAuthStore } from '@/store/authStore'
 import type { Pago } from '@/types'
 import { formatDate } from '@/utils/formatters'
+import toast from 'react-hot-toast'
 
 interface ModalReestructurarCalendarioProps {
   pagos: Pago[]
@@ -16,8 +18,20 @@ export default function ModalReestructurarCalendario({
   onSuccess,
 }: ModalReestructurarCalendarioProps) {
   const { actualizarMultiplesFechas, loading } = usePagos()
+  const { usuario } = useAuthStore()
   const [proximaFecha, setProximaFecha] = useState('')
   const [preview, setPreview] = useState<Array<{ numero: number; fecha: string }>>([])
+
+  // Verificar permisos
+  const canReestructurar = usuario?.rol !== 'supervisor'
+
+  // Si es supervisor, cerrar automáticamente
+  useEffect(() => {
+    if (!canReestructurar) {
+      toast.error('No tienes permisos para reestructurar el calendario')
+      setTimeout(onClose, 1500)
+    }
+  }, [canReestructurar, onClose])
 
   // Filtrar solo pagos pendientes
   const pagosPendientes = pagos.filter((p) => p.estado === 'pendiente')

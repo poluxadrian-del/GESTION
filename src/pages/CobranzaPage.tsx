@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePagos } from '@/hooks/usePagos'
+import { useAuthStore } from '@/store/authStore'
 import type { Pago } from '@/types'
 import PagosTable from '@/components/cobranza/PagosTable'
 import CarteraVencida from '@/components/cobranza/CarteraVencida'
 import ModalRegistrarPago from '@/components/cobranza/ModalRegistrarPago'
 import ModalRegistrarSeguimiento from '@/components/cobranza/ModalRegistrarSeguimiento'
+import toast from 'react-hot-toast'
 
 export default function CobranzaPage() {
   const { obtenerPagosPendientes, obtenerCarteraVencida } = usePagos()
+  const { usuario } = useAuthStore()
   const [selectedTab, setSelectedTab] = useState<'pendientes' | 'vencidos'>('pendientes')
   const [pagosPendientes, setPagosPendientes] = useState<Pago[]>([])
   const [pagosVencidos, setPagosVencidos] = useState<Pago[]>([])
@@ -16,6 +19,9 @@ export default function CobranzaPage() {
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null)
   const [selectedPagoSeguimiento, setSelectedPagoSeguimiento] = useState<Pago | null>(null)
   
+  // Determinar permisos basados en rol
+  const canRegisterPayments = usuario?.rol !== 'supervisor'
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPagos, setTotalPagos] = useState(0)
@@ -75,6 +81,18 @@ export default function CobranzaPage() {
     setFilterFechaHasta('')
     setFilterGestor('')
     setCurrentPage(1)
+  }
+
+  const handleSelectPago = (pago: Pago) => {
+    if (!canRegisterPayments) {
+      toast.error('No tienes permisos para registrar pagos')
+      return
+    }
+    setSelectedPago(pago)
+  }
+
+  const handleSelectPagoSeguimiento = (pago: Pago) => {
+    setSelectedPagoSeguimiento(pago)
   }
 
   const handlePreviousPage = () => {
@@ -214,8 +232,9 @@ export default function CobranzaPage() {
               <PagosTable
                 pagos={pagosPendientes}
                 loading={loading}
-                onSelectPago={setSelectedPago}
-                onSelectSeguimiento={setSelectedPagoSeguimiento}
+                onSelectPago={handleSelectPago}
+                onSelectSeguimiento={handleSelectPagoSeguimiento}
+                canRegister={canRegisterPayments}
               />
 
               {/* Paginación */}

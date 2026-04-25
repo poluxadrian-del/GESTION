@@ -7,13 +7,15 @@ interface PagosTableProps {
   loading: boolean
   onSelectPago: (pago: Pago) => void
   onSelectSeguimiento: (pago: Pago) => void
+  canRegister?: boolean
 }
 
 export default function PagosTable({ 
   pagos, 
   loading, 
   onSelectPago, 
-  onSelectSeguimiento
+  onSelectSeguimiento,
+  canRegister = true,
 }: PagosTableProps) {
   if (loading) {
     return (
@@ -79,7 +81,13 @@ export default function PagosTable({
               <td className="px-6 py-4 text-right">
                 <button
                   onClick={() => onSelectPago(pago)}
-                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  disabled={!canRegister}
+                  className={`px-3 py-1 text-sm rounded transition-colors ${
+                    canRegister
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                  title={canRegister ? 'Registrar pago' : 'No tienes permisos para registrar pagos'}
                 >
                   Registrar
                 </button>

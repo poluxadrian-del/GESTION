@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from 'react'
 import { usePagos } from '@/hooks/usePagos'
 import { useGestores } from '@/hooks/useGestores'
 import { useClientes } from '@/hooks/useClientes'
+import { useAuthStore } from '@/store/authStore'
 import type { Pago, Cliente } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 import { Calendar, CheckCircle, Clock, AlertCircle, Edit2, Plus, Download, RefreshCw } from 'lucide-react'
 import ModalRegistrarPago from '@/components/cobranza/ModalRegistrarPago'
 import ModalReestructurarCalendario from '@/components/clientes/ModalReestructurarCalendario'
+import toast from 'react-hot-toast'
 import { jsPDF } from 'jspdf'
 
 interface CalendarioPagosProps {
@@ -18,6 +20,7 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
   const { obtenerPagosPorCliente, loading } = usePagos()
   const { obtenerGestor } = useGestores()
   const { obtenerClientePorId } = useClientes()
+  const { usuario } = useAuthStore()
   const [pagos, setPagos] = useState<Pago[]>([])
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -26,6 +29,10 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
   const [clienteActualizado, setClienteActualizado] = useState<Cliente | undefined>(cliente)
   const [generandoPDF, setGenerandoPDF] = useState(false)
   const calendarioRef = useRef<HTMLDivElement>(null)
+
+  // Permisos
+  const canRegisterPayments = usuario?.rol !== 'supervisor'
+  const canReestructurar = usuario?.rol !== 'supervisor'
 
   const loadPagos = async () => {
     const data = await obtenerPagosPorCliente(clienteId)
@@ -66,8 +73,20 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
   }
 
   const openRegistrarModal = (pago: Pago) => {
+    if (!canRegisterPayments) {
+      toast.error('No tienes permisos para registrar pagos')
+      return
+    }
     setSelectedPago(pago)
     setShowModal(true)
+  }
+
+  const handleReestructurar = () => {
+    if (!canReestructurar) {
+      toast.error('No tienes permisos para reestructurar el calendario')
+      return
+    }
+    setShowModalReestructurar(true)
   }
 
   const handleFechaActualizada = () => {
@@ -242,9 +261,14 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => setShowModalReestructurar(true)}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-600 hover:bg-orange-700 text-white rounded"
-              title="Reestructurar todas las fechas"
+              onClick={handleReestructurar}
+              disabled={!canReestructurar}
+              className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                canReestructurar
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              title={canReestructurar ? 'Reestructurar todas las fechas' : 'No tienes permisos para reestructurar'}
             >
               <RefreshCw size={14} />
               Reestructurar
@@ -368,8 +392,13 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
                   {pago.estado !== 'pagado' ? (
                     <button
                       onClick={() => openRegistrarModal(pago)}
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium whitespace-nowrap"
-                      title="Registrar pago"
+                      disabled={!canRegisterPayments}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
+                        canRegisterPayments
+                          ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={canRegisterPayments ? 'Registrar pago' : 'No tienes permisos para registrar pagos'}
                     >
                       <Plus size={12} />
                       Registrar
@@ -377,8 +406,13 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
                   ) : (
                     <button
                       onClick={() => openRegistrarModal(pago)}
-                      className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-xs font-medium"
-                      title="Editar pago registrado"
+                      disabled={!canRegisterPayments}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        canRegisterPayments
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={canRegisterPayments ? 'Editar pago registrado' : 'No tienes permisos para editar pagos'}
                     >
                       <Edit2 size={12} />
                       Editar

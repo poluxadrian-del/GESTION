@@ -11,7 +11,7 @@ interface ClienteDetailProps {
 
 export default function ClienteDetail({ cliente: initialCliente, onShowHistorial }: ClienteDetailProps) {
   const [cliente, setCliente] = useState<Cliente>(initialCliente)
-  const { obtenerClientePorId, generarCalendarioPagosCliente, loading } = useClientes()
+  const { obtenerClientePorId } = useClientes()
 
   useEffect(() => {
     const loadFreshData = async () => {
@@ -24,15 +24,6 @@ export default function ClienteDetail({ cliente: initialCliente, onShowHistorial
     }
     loadFreshData()
   }, [initialCliente.id, obtenerClientePorId])
-
-  const handleGenerarCalendario = async () => {
-    const success = await generarCalendarioPagosCliente(cliente.id)
-    if (success) {
-      // Recargar datos del cliente para actualizar estado
-      const data = await obtenerClientePorId(cliente.id)
-      if (data) setCliente(data)
-    }
-  }
 
   return (
     <div className="space-y-4">
@@ -195,20 +186,6 @@ export default function ClienteDetail({ cliente: initialCliente, onShowHistorial
           </div>
         </div>
       </div>
-
-      {/* Botón para generar calendario (solo si está en estado 'inicio') */}
-      {cliente.estado === 'inicio' && (
-        <div className="bg-purple-50 border border-purple-200 p-3 rounded-lg">
-          <p className="text-xs text-gray-600 mb-2">El cliente aún no tiene calendario de pagos. Genera uno ahora:</p>
-          <button
-            onClick={handleGenerarCalendario}
-            disabled={loading}
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm font-medium transition-colors"
-          >
-            {loading ? 'Generando calendario...' : 'Generar Calendario de Pagos'}
-          </button>
-        </div>
-      )}
 
       {/* Botón para ver historial de seguimientos */}
       {onShowHistorial && (

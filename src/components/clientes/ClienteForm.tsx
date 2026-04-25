@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useGestores } from '@/hooks/useGestores'
+import { useAuthStore } from '@/store/authStore'
 import type { Cliente, Gestor } from '@/types'
 import { formatCurrency } from '@/utils/formatters'
+import toast from 'react-hot-toast'
 
 interface ClienteFormProps {
   cliente?: Cliente | null
@@ -21,9 +23,22 @@ export default function ClienteForm({
   onGenerarCalendario,
   generandoCalendario,
 }: ClienteFormProps) {
+  const { usuario } = useAuthStore()
   const [gestores, setGestores] = useState<Gestor[]>([])
   const [diaPago2, setDiaPago2] = useState<number | ''>(cliente?.dia_pago || '')
   const { obtenerGestores, loading: gestoresLoading } = useGestores()
+  
+  // Verificar permisos
+  const canEdit = usuario?.rol !== 'supervisor'
+
+  // Si es supervisor, mostrar mensaje y cerrar
+  useEffect(() => {
+    if (!canEdit) {
+      toast.error('No tienes permisos para editar clientes')
+      setTimeout(onCancel, 1500)
+    }
+  }, [canEdit, onCancel])
+
   const {
     register,
     handleSubmit,
