@@ -19,7 +19,7 @@ interface CalendarioPagosProps {
 }
 
 export default function CalendarioPagos({ clienteId, cliente, onPagoRegistrado }: CalendarioPagosProps) {
-  const { obtenerCalendarioPagos, obtenerResumenCliente, loading } = usePagos()
+  const { obtenerCalendarioPagos, obtenerResumenCliente, obtenerPagosRealizados, loading } = usePagos()
   const { obtenerGestor } = useGestores()
   const { obtenerClientePorId } = useClientes()
   const { usuario } = useAuthStore()
@@ -112,6 +112,9 @@ export default function CalendarioPagos({ clienteId, cliente, onPagoRegistrado }
 
     setGenerandoPDF(true)
     try {
+      // Obtener histórico de pagos
+      const pagosRealizados = await obtenerPagosRealizados(clienteId)
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -210,6 +213,76 @@ export default function CalendarioPagos({ clienteId, cliente, onPagoRegistrado }
 
         yPos += 5
       })
+
+      // ============ HISTÓRICO DE PAGOS REALIZADOS ============
+      yPos += 10
+      
+      // Verificar si necesitamos nueva página
+      if (yPos > pageHeight - 40) {
+        pdf.addPage()
+        yPos = 15
+      }
+
+      pdf.setFontSize(11)
+      pdf.text('HISTÓRICO DE PAGOS REALIZADOS', margin, yPos)
+      yPos += 6
+
+      if (pagosRealizados && pagosRealizados.length > 0) {
+        // Encabezados del histórico
+        pdf.setFontSize(8)
+        const historyColWidths = [30, 30, 50]
+        const historyHeaders = ['Fecha', 'Monto', 'Estado']
+        xPos = margin
+
+        historyHeaders.forEach((header, i) => {
+          pdf.text(header, xPos, yPos)
+          xPos += historyColWidths[i]
+        })
+
+        yPos += 5
+        pdf.setDrawColor(200)
+        pdf.line(margin, yPos, pageWidth - margin, yPos)
+        yPos += 4
+
+        // Datos del histórico
+        pagosRealizados.forEach((pago) => {
+          if (yPos > pageHeight - 15) {
+            pdf.addPage()
+            yPos = 15
+            // Repetir encabezados en nueva página
+            xPos = margin
+            historyHeaders.forEach((header, i) => {
+              pdf.text(header, xPos, yPos)
+              xPos += historyColWidths[i]
+            })
+            yPos += 5
+            pdf.setDrawColor(200)
+            pdf.line(margin, yPos, pageWidth - margin, yPos)
+            yPos += 4
+          }
+
+          xPos = margin
+          const esReversado = pago.monto_pagado === 0 && pago.motivo_eliminacion
+          const estadoPago = esReversado ? 'Reversado' : 'Pagado'
+
+          const datosHistorico = [
+            formatDate(pago.fecha_pago),
+            `$${pago.monto_pagado.toFixed(2)}`,
+            estadoPago
+          ]
+
+          datosHistorico.forEach((dato, i) => {
+            const texto = esReversado && i === 1 ? `${dato} (${pago.motivo_eliminacion})` : dato
+            pdf.text(texto, xPos, yPos, { maxWidth: historyColWidths[i] - 2 })
+            xPos += historyColWidths[i]
+          })
+
+          yPos += 5
+        })
+      } else {
+        pdf.setFontSize(9)
+        pdf.text('Sin pagos registrados', margin, yPos)
+      }
 
       const nombreArchivo = `Estado_Cuenta_${cliente.nombre_completo?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(nombreArchivo)
