@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { usePagos } from '@/hooks/usePagos'
+import { useAuthStore } from '@/store/authStore'
 import type { PagoRealizado } from '@/types'
 import { formatDate } from '@/utils/formatters'
 import { Calendar, DollarSign, Trash2, AlertCircle } from 'lucide-react'
@@ -21,6 +22,10 @@ export default function HistorialPagosRealizados({
   onDelete
 }: HistorialPagosRealizadosProps) {
   const { obtenerPagosRealizados, loading, reversarPagoRealizado } = usePagos()
+  const { usuario } = useAuthStore()
+
+  // Permisos
+  const canReversarPagos = usuario?.rol !== 'supervisor'
 
   const [pagosRealizados, setPagosRealizados] = useState<PagoRealizado[]>([])
   const [modalOpen, setModalOpen] = useState(false)
@@ -37,6 +42,10 @@ export default function HistorialPagosRealizados({
   }
 
   const handleOpenReversalModal = (pago: PagoRealizado) => {
+    if (!canReversarPagos) {
+      toast.error('No tienes permisos para reversar pagos')
+      return
+    }
     setSelectedPago(pago)
     setModalOpen(true)
   }
@@ -139,9 +148,9 @@ export default function HistorialPagosRealizados({
                       {!esReversado && (
                         <button
                           onClick={() => handleOpenReversalModal(pago)}
-                          disabled={reversalLoading}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                          title="Reversar pago"
+                          disabled={reversalLoading || !canReversarPagos}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={!canReversarPagos ? 'No tienes permisos para reversar pagos' : 'Reversar pago'}
                         >
                           <Trash2 size={14} />
                         </button>
