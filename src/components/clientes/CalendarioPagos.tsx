@@ -3,9 +3,9 @@ import { usePagos } from '@/hooks/usePagos'
 import { useGestores } from '@/hooks/useGestores'
 import { useClientes } from '@/hooks/useClientes'
 import { useAuthStore } from '@/store/authStore'
-import type { CalendarioPago, PagoRealizado, Cliente } from '@/types'
+import type { CalendarioPago, Cliente } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/formatters'
-import { Calendar, CheckCircle, Clock, AlertCircle, Edit2, Plus, Download, RefreshCw } from 'lucide-react'
+import { Calendar, Plus, Download, RefreshCw } from 'lucide-react'
 import ModalRegistrarPagoRealizado from '@/components/cobranza/ModalRegistrarPagoRealizado'
 import ModalReestructurarCalendario from '@/components/clientes/ModalReestructurarCalendario'
 import HistorialPagosRealizados from '@/components/clientes/HistorialPagosRealizados'
@@ -228,28 +228,6 @@ export default function CalendarioPagos({ clienteId, cliente, onPagoRegistrado }
         <p className="text-gray-600 text-sm mt-2">Cargando calendario...</p>
       </div>
     )
-  }
-
-  const estadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'pagado':
-        return <CheckCircle size={16} className="text-green-600" />
-      case 'parcialmente_pagado':
-        return <Clock size={16} className="text-yellow-600" />
-      default:
-        return <AlertCircle size={16} className="text-red-600" />
-    }
-  }
-
-  const estadoColor = (estado: string) => {
-    switch (estado) {
-      case 'pagado':
-        return 'bg-green-50 border-green-200'
-      case 'parcialmente_pagado':
-        return 'bg-yellow-50 border-yellow-200'
-      default:
-        return 'bg-red-50 border-red-200'
-    }
   }
 
   return (

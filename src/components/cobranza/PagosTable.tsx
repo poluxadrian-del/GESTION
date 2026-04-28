@@ -51,10 +51,10 @@ export default function PagosTable({
           {pagos.map(pago => (
             <tr key={pago.id} className="hover:bg-gray-50">
               <td className="px-3 py-2 font-medium text-gray-900">
-                {(pago.clientes as any)?.nombre_completo || 'N/A'}
+                {(pago.cliente as any)?.nombre_completo || 'N/A'}
               </td>
               <td className="px-3 py-2 text-gray-600">
-                Cuota {pago.numero_cuota}
+                Cuota {pago.numero_pago || 1}
               </td>
               <td className="px-3 py-2 text-gray-600">
                 {formatDate(pago.fecha_programada)}

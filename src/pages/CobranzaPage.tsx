@@ -69,7 +69,14 @@ export default function CobranzaPage() {
         }),
       ])
 
-      setPagosPendientes(pendientesResult.data)
+      // Mapear datos de calendarios_pagos a estructura compatible con PagosTable
+      const pagosMapeados = pendientesResult.data.map((p: any) => ({
+        ...p,
+        cliente: p.clientes,  // Convertir clientes → cliente
+        numero_pago: p.numero_cuota,  // Convertir numero_cuota → numero_pago
+      }))
+
+      setPagosPendientes(pagosMapeados)
       setTotalPagos(pendientesResult.total)
       setTotalPages(pendientesResult.totalPages)
       setPagosVencidos(carteraResult.data)
@@ -131,7 +138,7 @@ export default function CobranzaPage() {
 
   const getUniqueGestores = () => {
     const gestores = pagosPendientes
-      .map((p) => (p.clientes as any)?.gestor?.nombre)
+      .map((p) => (p.cliente as any)?.gestor?.nombre)
       .filter((g, i, arr) => g && arr.indexOf(g) === i)
       .sort()
     return gestores
@@ -139,7 +146,7 @@ export default function CobranzaPage() {
 
   const getUniqueGestoresCartera = () => {
     const gestores = pagosVencidos
-      .map((p) => (p.clientes as any)?.gestor?.nombre)
+      .map((p) => (p.cliente as any)?.gestor?.nombre)
       .filter((g, i, arr) => g && arr.indexOf(g) === i)
       .sort()
     return gestores
@@ -353,7 +360,7 @@ export default function CobranzaPage() {
       {selectedPago && (
         <ModalRegistrarPago
           pago={selectedPago}
-          cliente={selectedPago.clientes as any}
+          cliente={selectedPago.cliente as any}
           onClose={() => setSelectedPago(null)}
           onSuccess={handleSeguimientoRegistered}
         />

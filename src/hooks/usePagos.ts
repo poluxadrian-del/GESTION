@@ -150,7 +150,7 @@ export const usePagos = () => {
     setError(null);
 
     try {
-      const { data, error: err } = await supabase
+      const { error: err } = await supabase
         .from('pagos_realizados')
         .insert([{
           cliente_id: clienteId,
@@ -158,9 +158,7 @@ export const usePagos = () => {
           monto_pagado: input.monto_pagado,
           gestor_id: input.gestor_id || null,
           notas: input.notas || null,
-        }])
-        .select()
-        .single();
+        }]);
 
       if (err) throw err;
       
@@ -194,7 +192,7 @@ export const usePagos = () => {
     setError(null);
 
     try {
-      const { data, error: err } = await supabase
+      const { error: err } = await supabase
         .from('pagos_realizados')
         .update(input)
         .eq('id', pagoId)
@@ -352,7 +350,7 @@ export const usePagos = () => {
         query = query.lte('fecha_programada', filters.fechaHasta);
       }
 
-      const { data, count, error: err } = await query;
+      const { data, error: err } = await query;
 
       if (err) throw err;
 
@@ -424,12 +422,12 @@ export const usePagos = () => {
               nombre
             )
           )
-        `, { count: 'exact' })
+        `)
         .eq('estado', 'pendiente')
         .lt('fecha_programada', hayUnMes)
         .order('fecha_programada', { ascending: true });
 
-      const { data, count, error: err } = await query;
+      const { data, error: err } = await query;
 
       if (err) throw err;
 

@@ -1,4 +1,4 @@
-import { AlertTriangle, Phone, ChevronDown, ChevronUp } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Pago } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 import { useState } from 'react'

@@ -77,12 +77,18 @@ export default function ModalRegistrarPago({
     }
   }, [gestores, cliente?.gestor_id, setValue])
 
-  const onSubmit = async (data: RegistrarPagoInput | EditarPagoInput) => {
+  const onSubmit = async (formData: any) => {
     let success = false
     if (esEdicion) {
-      success = await editarPago(pago.id, data as EditarPagoInput)
+      success = await editarPago(pago.id, { 
+        ...formData, 
+        notas: formData.notas === null ? undefined : formData.notas 
+      })
     } else {
-      success = await registrarPago(pago.cliente_id, data as RegistrarPagoInput)
+      success = await registrarPago(pago.cliente_id, { 
+        ...formData, 
+        notas: formData.notas === null ? undefined : formData.notas 
+      })
     }
     if (success) {
       onSuccess()
@@ -110,9 +116,9 @@ export default function ModalRegistrarPago({
           <div className="bg-blue-50 p-2 rounded-lg">
             <p className="text-xs text-gray-600">Cliente</p>
             <p className="font-semibold text-sm text-gray-900">
-              {(pago.clientes as any)?.nombre_completo || cliente?.nombre_completo}
+              {cliente?.nombre_completo || 'Sin cliente'}
             </p>
-            <p className="text-xs text-gray-600 mt-1">Cuota {pago.numero_cuota}</p>
+            <p className="text-xs text-gray-600 mt-1">Cuota {pago.numero_pago || 1}</p>
             <p className="font-medium text-sm text-blue-600 mt-0.5">
               {formatCurrency(pago.monto_programado)}
             </p>

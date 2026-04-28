@@ -58,7 +58,7 @@ export const validarRegistroPagoRealizado = (input: unknown) => {
     return registrarPagoRealizadoSchema.parse(input);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { error: error.errors[0].message };
+      return { error: error.issues[0]?.message || 'Error al validar pago' };
     }
     return { error: 'Error al validar pago' };
   }
@@ -69,7 +69,7 @@ export const validarEdicionPagoRealizado = (input: unknown) => {
     return editarPagoRealizadoSchema.parse(input);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { error: error.errors[0].message };
+      return { error: error.issues[0]?.message || 'Error al validar pago' };
     }
     return { error: 'Error al validar pago' };
   }

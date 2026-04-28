@@ -1,7 +1,3 @@
-/**
- * Helpers para lógica de negocio crítica
- */
-
 import type { FrecuenciaPago } from '@/types';
 
 /**
@@ -19,7 +15,14 @@ export function generarCalendarioPagos(cliente: any): Array<{
   estado: 'pendiente';
   saldo_pendiente: number;
 }> {
-  const cuotas = [];
+  const cuotas: Array<{
+    cliente_id: string;
+    numero_cuota: number;
+    fecha_programada: string;
+    monto_programado: number;
+    estado: 'pendiente';
+    saldo_pendiente: number;
+  }> = [];
   const fechaInicio = new Date(cliente.fecha_primer_pago);
   const añoInicio = fechaInicio.getFullYear();
   const mesInicio = fechaInicio.getMonth();

@@ -87,7 +87,8 @@ export const useReportes = () => {
       }
 
       // Transformar a formato reporte
-      const reporte: ReporteCobranza[] = reporteData.map(p => ({
+      const reporte: ReporteCobranza[] = reporteData.map((p, index) => ({
+        numero_pago: index + 1,
         fecha_pago: p.fecha_pago || '',
         cliente_nombre: (p.cliente as any)?.nombre_completo || 'Sin cliente',
         gestor_nombre: (p.gestor as any)?.nombre || '-',
