@@ -2,28 +2,39 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { usePagos } from '@/hooks/usePagos'
 import { useAuthStore } from '@/store/authStore'
-import type { Pago } from '@/types'
+import type { CalendarioPago } from '@/types'
 import { formatDate } from '@/utils/formatters'
 import toast from 'react-hot-toast'
 
 interface ModalReestructurarCalendarioProps {
-  pagos: Pago[]
+  clienteId: string
   onClose: () => void
   onSuccess: () => void
 }
 
 export default function ModalReestructurarCalendario({
-  pagos,
+  clienteId,
   onClose,
   onSuccess,
 }: ModalReestructurarCalendarioProps) {
-  const { actualizarMultiplesFechas, loading } = usePagos()
+  const { obtenerCalendarioPagos, actualizarMultiplesFechas, loading: hookLoading } = usePagos()
   const { usuario } = useAuthStore()
   const [proximaFecha, setProximaFecha] = useState('')
-  const [preview, setPreview] = useState<Array<{ numero: number; fecha: string }>>([])
+  const [preview, setPreview] = useState<Array<{ id: string; numero: number; fecha: string }>>([])
+  const [calendarios, setCalendarios] = useState<CalendarioPago[]>([])
+  const [loading, setLoading] = useState(false)
 
   // Verificar permisos
   const canReestructurar = usuario?.rol !== 'supervisor'
+
+  // Cargar calendarios
+  useEffect(() => {
+    const cargar = async () => {
+      const data = await obtenerCalendarioPagos(clienteId)
+      setCalendarios(data)
+    }
+    cargar()
+  }, [clienteId, obtenerCalendarioPagos])
 
   // Si es supervisor, cerrar automáticamente
   useEffect(() => {
@@ -33,8 +44,8 @@ export default function ModalReestructurarCalendario({
     }
   }, [canReestructurar, onClose])
 
-  // Filtrar solo pagos pendientes
-  const pagosPendientes = pagos.filter((p) => p.estado === 'pendiente')
+  // Filtrar solo cuotas pendientes
+  const cuotasPendientes = calendarios.filter((c) => c.estado === 'pendiente')
 
   const calcularFechas = (fechaInicial: string) => {
     if (!fechaInicial) {
@@ -46,7 +57,7 @@ export default function ModalReestructurarCalendario({
       const [year, month, day] = fechaInicial.split('-').map(Number)
       const previsualizacion = []
 
-      for (let i = 0; i < pagosPendientes.length; i++) {
+      for (let i = 0; i < cuotasPendientes.length; i++) {
         const fecha = new Date(year, month - 1, day)
         fecha.setMonth(fecha.getMonth() + i)
 
@@ -56,7 +67,8 @@ export default function ModalReestructurarCalendario({
         const fechaFormato = `${y}-${m}-${d}`
 
         previsualizacion.push({
-          numero: pagosPendientes[i].numero_pago,
+          id: cuotasPendientes[i].id,
+          numero: cuotasPendientes[i].numero_cuota,
           fecha: fechaFormato,
         })
       }
@@ -78,17 +90,20 @@ export default function ModalReestructurarCalendario({
     e.preventDefault()
 
     if (!proximaFecha || preview.length === 0) {
-      alert('Por favor selecciona una fecha válida')
+      toast.error('Por favor selecciona una fecha válida')
       return
     }
 
-    // Crear actualizaciones
-    const actualizaciones = pagosPendientes.map((pago, index) => ({
-      pagoId: pago.id,
-      nuevaFecha: preview[index].fecha,
+    // Crear actualizaciones (ahora con calendarioPagoId)
+    const actualizaciones = preview.map((item) => ({
+      calendarioPagoId: item.id,
+      nuevaFecha: item.fecha,
     }))
 
+    setLoading(true)
     const success = await actualizarMultiplesFechas(actualizaciones)
+    setLoading(false)
+
     if (success) {
       onSuccess()
       onClose()
@@ -105,9 +120,9 @@ export default function ModalReestructurarCalendario({
           </button>
         </div>
 
-        {pagosPendientes.length === 0 ? (
+        {cuotasPendientes.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No hay pagos pendientes para reestructurar</p>
+            <p>No hay cuotas pendientes para reestructurar</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -134,7 +149,7 @@ export default function ModalReestructurarCalendario({
                 <p className="text-xs font-semibold text-gray-700 mb-2">Previsualización:</p>
                 <div className="space-y-1">
                   {preview.map((item) => (
-                    <div key={item.numero} className="flex justify-between text-xs text-gray-600">
+                    <div key={item.id} className="flex justify-between text-xs text-gray-600">
                       <span>Cuota {item.numero}:</span>
                       <span className="font-medium text-blue-600">{formatDate(item.fecha)}</span>
                     </div>
@@ -157,16 +172,17 @@ export default function ModalReestructurarCalendario({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                disabled={loading || hookLoading}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={loading || preview.length === 0}
+                disabled={loading || hookLoading || preview.length === 0}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Guardando...' : 'Guardar Cambios'}
+                {loading || hookLoading ? 'Guardando...' : 'Guardar Cambios'}
               </button>
             </div>
           </form>

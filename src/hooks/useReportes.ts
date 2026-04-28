@@ -37,31 +37,48 @@ export const useReportes = () => {
     setError(null);
 
     try {
-      let query = supabase
-        .from('pagos')
-        .select('fecha_pago, monto_pagado, numero_pago, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, numero_contrato, factura), gestor:gestor_id(nombre)')
-        .eq('estado', 'pagado')
-        .not('fecha_pago', 'is', null)
-        .order('fecha_pago', { ascending: true });
+      let allData: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (fechaDesde) {
-        query = query.gte('fecha_pago', fechaDesde);
+      while (hasMore) {
+        let query = supabase
+          .from('pagos_realizados')
+          .select('fecha_pago, monto_pagado, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, numero_contrato, factura), gestor:gestor_id(nombre)')
+          .not('fecha_pago', 'is', null)
+          .order('fecha_pago', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (fechaDesde) {
+          query = query.gte('fecha_pago', fechaDesde);
+        }
+
+        if (fechaHasta) {
+          query = query.lte('fecha_pago', fechaHasta);
+        }
+
+        if (gestorId) {
+          query = query.eq('gestor_id', gestorId);
+        }
+
+        const { data, error: err } = await query;
+
+        if (err) throw err;
+
+        if (!data || data.length === 0) {
+          hasMore = false;
+        } else {
+          allData = allData.concat(data);
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        }
       }
-
-      if (fechaHasta) {
-        query = query.lte('fecha_pago', fechaHasta);
-      }
-
-      if (gestorId) {
-        query = query.eq('gestor_id', gestorId);
-      }
-
-      const { data, error: err } = await query;
-
-      if (err) throw err;
 
       // Filtrar por factura en el lado del cliente si se especifica
-      let reporteData = (data || []);
+      let reporteData = allData;
       if (factura !== undefined) {
         reporteData = reporteData.filter(p => {
           const clienteFactura = (p.cliente as any)?.factura;
@@ -75,7 +92,6 @@ export const useReportes = () => {
         cliente_nombre: (p.cliente as any)?.nombre_completo || 'Sin cliente',
         gestor_nombre: (p.gestor as any)?.nombre || '-',
         monto_pagado: p.monto_pagado || 0,
-        numero_pago: p.numero_pago,
         numero_contrato: (p.cliente as any)?.numero_contrato || '',
       }));
 
@@ -99,33 +115,67 @@ export const useReportes = () => {
     setError(null);
 
     try {
-      let query = supabase
-        .from('pagos')
-        .select('numero_pago, fecha_programada, fecha_pago, monto_programado, monto_pagado, estado, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, factura, estado), gestor:gestor_id(nombre)')
-        .order('fecha_programada', { ascending: true });
+      let allData: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (fechaDesde) {
-        query = query.gte('fecha_programada', fechaDesde);
+      while (hasMore) {
+        let query = supabase
+          .from('calendarios_pagos')
+          .select('numero_cuota, fecha_programada, monto_programado, saldo_pendiente, estado, cliente_id, cliente:cliente_id(nombre_completo, factura, estado, gestor_id, gestor:gestor_id(nombre))')
+          .order('fecha_programada', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (fechaDesde) {
+          query = query.gte('fecha_programada', fechaDesde);
+        }
+
+        if (fechaHasta) {
+          query = query.lte('fecha_programada', fechaHasta);
+        }
+
+        if (estadoPago) {
+          query = query.eq('estado', estadoPago);
+        }
+
+        if (gestorId) {
+          query = query.eq('cliente.gestor_id', gestorId);
+        }
+
+        const { data, error: err } = await query;
+
+        if (err) throw err;
+
+        if (!data || data.length === 0) {
+          hasMore = false;
+        } else {
+          allData = allData.concat(data);
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        }
       }
 
-      if (fechaHasta) {
-        query = query.lte('fecha_programada', fechaHasta);
-      }
+      // Obtener fecha de pago más reciente por cliente
+      const { data: pagosRealizados, error: errPagos } = await supabase
+        .from('pagos_realizados')
+        .select('cliente_id, fecha_pago')
+        .order('fecha_pago', { ascending: false });
 
-      if (estadoPago) {
-        query = query.eq('estado', estadoPago);
-      }
+      if (errPagos) throw errPagos;
 
-      if (gestorId) {
-        query = query.eq('gestor_id', gestorId);
-      }
-
-      const { data, error: err } = await query;
-
-      if (err) throw err;
+      // Crear mapa de cliente_id -> fecha_pago más reciente
+      const fechaPorCliente = new Map<string, string>();
+      (pagosRealizados || []).forEach((p: any) => {
+        if (!fechaPorCliente.has(p.cliente_id)) {
+          fechaPorCliente.set(p.cliente_id, p.fecha_pago);
+        }
+      });
 
       // Filtrar por cliente activo en el lado del cliente
-      let reporteData = (data || []).filter(p => {
+      let reporteData = allData.filter(p => {
         const cliente = (p.cliente as any);
         return cliente && cliente.estado === 'activo';
       });
@@ -133,13 +183,13 @@ export const useReportes = () => {
       // Transformar a formato reporte
       const reporte: ReportePagosCobrar[] = reporteData.map(p => ({
         cliente_nombre: (p.cliente as any)?.nombre_completo || 'Sin cliente',
-        numero_pago: p.numero_pago,
+        numero_pago: (p as any).numero_cuota,
         fecha_programada: p.fecha_programada,
-        fecha_pago: p.fecha_pago || '',
+        fecha_pago: p.estado === 'pagado' ? (fechaPorCliente.get(p.cliente_id) || '') : '',
         monto_programado: p.monto_programado || 0,
-        monto_pagado: p.monto_pagado || 0,
+        monto_pagado: p.monto_programado - (p.saldo_pendiente || 0),
         factura: (p.cliente as any)?.factura || false,
-        gestor_nombre: (p.gestor as any)?.nombre || '-',
+        gestor_nombre: (p.cliente as any)?.gestor?.nombre || '-',
         estado: p.estado,
       }));
 

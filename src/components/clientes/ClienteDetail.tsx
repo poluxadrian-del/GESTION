@@ -1,7 +1,5 @@
 import { Calendar, MapPin, Phone, Mail, History } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import type { Cliente } from '@/types'
-import { useClientes } from '@/hooks/useClientes'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 interface ClienteDetailProps {
@@ -9,22 +7,7 @@ interface ClienteDetailProps {
   onShowHistorial?: () => void
 }
 
-export default function ClienteDetail({ cliente: initialCliente, onShowHistorial }: ClienteDetailProps) {
-  const [cliente, setCliente] = useState<Cliente>(initialCliente)
-  const { obtenerClientePorId } = useClientes()
-
-  useEffect(() => {
-    const loadFreshData = async () => {
-      try {
-        const data = await obtenerClientePorId(initialCliente.id)
-        if (data) setCliente(data)
-      } catch (error) {
-        console.error('Error loading client:', error)
-      }
-    }
-    loadFreshData()
-  }, [initialCliente.id, obtenerClientePorId])
-
+export default function ClienteDetail({ cliente, onShowHistorial }: ClienteDetailProps) {
   return (
     <div className="space-y-4">
       {/* Datos básicos */}

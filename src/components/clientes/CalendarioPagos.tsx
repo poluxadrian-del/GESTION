@@ -3,43 +3,52 @@ import { usePagos } from '@/hooks/usePagos'
 import { useGestores } from '@/hooks/useGestores'
 import { useClientes } from '@/hooks/useClientes'
 import { useAuthStore } from '@/store/authStore'
-import type { Pago, Cliente } from '@/types'
+import type { CalendarioPago, PagoRealizado, Cliente } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 import { Calendar, CheckCircle, Clock, AlertCircle, Edit2, Plus, Download, RefreshCw } from 'lucide-react'
-import ModalRegistrarPago from '@/components/cobranza/ModalRegistrarPago'
+import ModalRegistrarPagoRealizado from '@/components/cobranza/ModalRegistrarPagoRealizado'
 import ModalReestructurarCalendario from '@/components/clientes/ModalReestructurarCalendario'
+import HistorialPagosRealizados from '@/components/clientes/HistorialPagosRealizados'
 import toast from 'react-hot-toast'
 import { jsPDF } from 'jspdf'
 
 interface CalendarioPagosProps {
   clienteId: string
   cliente?: Cliente
+  onPagoRegistrado?: () => void
 }
 
-export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosProps) {
-  const { obtenerPagosPorCliente, loading } = usePagos()
+export default function CalendarioPagos({ clienteId, cliente, onPagoRegistrado }: CalendarioPagosProps) {
+  const { obtenerCalendarioPagos, obtenerResumenCliente, loading } = usePagos()
   const { obtenerGestor } = useGestores()
   const { obtenerClientePorId } = useClientes()
   const { usuario } = useAuthStore()
-  const [pagos, setPagos] = useState<Pago[]>([])
-  const [selectedPago, setSelectedPago] = useState<Pago | null>(null)
+
+  const [calendarios, setCalendarios] = useState<CalendarioPago[]>([])
+  const [resumen, setResumen] = useState<any>(null)
+  const [selectedCuota, setSelectedCuota] = useState<CalendarioPago | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showModalReestructurar, setShowModalReestructurar] = useState(false)
   const [gestorNombre, setGestorNombre] = useState<string>('')
   const [clienteActualizado, setClienteActualizado] = useState<Cliente | undefined>(cliente)
   const [generandoPDF, setGenerandoPDF] = useState(false)
+  const [refreshHistorial, setRefreshHistorial] = useState(0) // Trigger para recargar histórico
   const calendarioRef = useRef<HTMLDivElement>(null)
 
   // Permisos
   const canRegisterPayments = usuario?.rol !== 'supervisor'
   const canReestructurar = usuario?.rol !== 'supervisor'
 
-  const loadPagos = async () => {
-    const data = await obtenerPagosPorCliente(clienteId)
-    setPagos(data)
+  const loadCalendarios = async () => {
+    const data = await obtenerCalendarioPagos(clienteId)
+    setCalendarios(data)
+
+    // Cargar resumen consolidado
+    const res = await obtenerResumenCliente(clienteId)
+    setResumen(res)
   }
 
-  // Cargar cliente actualizado desde BD para obtener meses_pagados correcto
+  // Cargar cliente actualizado desde BD
   useEffect(() => {
     const loadClienteActualizado = async () => {
       const data = await obtenerClientePorId(clienteId)
@@ -50,10 +59,12 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
     loadClienteActualizado()
   }, [clienteId, obtenerClientePorId])
 
+  // Cargar calendarios al montar
   useEffect(() => {
-    loadPagos()
+    loadCalendarios()
   }, [clienteId])
 
+  // Cargar gestor del cliente
   useEffect(() => {
     const loadGestor = async () => {
       if (clienteActualizado?.gestor_id) {
@@ -66,18 +77,21 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
     loadGestor()
   }, [clienteActualizado?.gestor_id, obtenerGestor])
 
-  const handlePagoRegistered = () => {
-    loadPagos()
+  const handlePagoRegistrado = () => {
+    loadCalendarios()
+    setRefreshHistorial(prev => prev + 1) // Trigger para recargar histórico
     setShowModal(false)
-    setSelectedPago(null)
+    setSelectedCuota(null)
+    // Callback si es necesario
+    onPagoRegistrado?.()
   }
 
-  const openRegistrarModal = (pago: Pago) => {
+  const openRegistrarModal = (cuota: CalendarioPago) => {
     if (!canRegisterPayments) {
       toast.error('No tienes permisos para registrar pagos')
       return
     }
-    setSelectedPago(pago)
+    setSelectedCuota(cuota)
     setShowModal(true)
   }
 
@@ -90,7 +104,7 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
   }
 
   const handleFechaActualizada = () => {
-    loadPagos()
+    loadCalendarios()
   }
 
   const descargarPDF = async () => {
@@ -134,17 +148,17 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
       pdf.text('RESUMEN', margin, yPos)
       yPos += 6
 
-      const totalProgramado = pagos.reduce((sum, p) => sum + p.monto_programado, 0)
-      const totalPagado = pagos.reduce((sum, p) => sum + (p.monto_pagado || 0), 0)
-      const pendiente = pagos.reduce((sum, p) => sum + (p.monto_programado - (p.monto_pagado || 0)), 0)
-
-      pdf.setFontSize(9)
-      pdf.text(`Monto Programado: ${formatCurrency(totalProgramado)}`, margin, yPos)
-      yPos += 5
-      pdf.text(`Monto Pagado: ${formatCurrency(totalPagado)}`, margin, yPos)
-      yPos += 5
-      pdf.text(`Monto Pendiente: ${formatCurrency(pendiente)}`, margin, yPos)
-      yPos += 10
+      if (resumen) {
+        pdf.setFontSize(9)
+        pdf.text(`Total Programado: ${formatCurrency(resumen.total_programado || 0)}`, margin, yPos)
+        yPos += 5
+        pdf.text(`Total Pagado: ${formatCurrency(resumen.total_pagado_realizado || 0)}`, margin, yPos)
+        yPos += 5
+        pdf.text(`Saldo Pendiente: ${formatCurrency(resumen.total_saldo_pendiente || 0)}`, margin, yPos)
+        yPos += 5
+        pdf.text(`Cuotas Pagadas: ${resumen.cuotas_pagadas}/${resumen.total_cuotas_programadas}`, margin, yPos)
+        yPos += 10
+      }
 
       // Tabla de cuotas
       pdf.setFontSize(9)
@@ -154,7 +168,7 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
       // Encabezados de tabla
       pdf.setFontSize(8)
       const colWidths = [15, 28, 32, 24, 24, 32]
-      const headers = ['Cuota', 'Estado', 'F. Programada', 'Programado', 'Pagado', 'Fecha Pago']
+      const headers = ['Cuota', 'Estado', 'F. Programada', 'Monto', 'Saldo', 'Estado']
       let xPos = margin
 
       headers.forEach((header, i) => {
@@ -168,21 +182,25 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
       yPos += 4
 
       // Datos de cuotas
-      pagos.forEach((pago) => {
+      calendarios.forEach((cuota) => {
         if (yPos > pageHeight - 20) {
           pdf.addPage()
           yPos = 15
         }
 
         xPos = margin
-        const estadoTexto = pago.estado === 'pagado' ? 'Pagado' : pago.estado === 'vencido' ? 'Vencido' : 'Pendiente'
+        const estadoTexto = 
+          cuota.estado === 'pagado' ? 'Pagado' : 
+          cuota.estado === 'parcialmente_pagado' ? 'Parcial' : 
+          'Pendiente'
+
         const datos = [
-          pago.numero_pago.toString(),
+          cuota.numero_cuota.toString(),
           estadoTexto,
-          formatDate(pago.fecha_programada),
-          formatCurrency(pago.monto_programado),
-          formatCurrency(pago.monto_pagado || 0),
-          pago.fecha_pago ? formatDate(pago.fecha_pago) : 'N/A'
+          formatDate(cuota.fecha_programada),
+          formatCurrency(cuota.monto_programado),
+          formatCurrency(cuota.saldo_pendiente),
+          'OK'
         ]
 
         datos.forEach((dato, i) => {
@@ -197,7 +215,7 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
       pdf.save(nombreArchivo)
     } catch (error) {
       console.error('Error al generar PDF:', error)
-      alert('Error al generar el PDF. Intenta nuevamente.')
+      toast.error('Error al generar el PDF')
     } finally {
       setGenerandoPDF(false)
     }
@@ -207,15 +225,7 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
     return (
       <div className="text-center py-4">
         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-        <p className="text-gray-600 text-sm mt-2">Cargando pagos...</p>
-      </div>
-    )
-  }
-
-  if (pagos.length === 0) {
-    return (
-      <div className="text-center py-4">
-        <p className="text-gray-500 text-sm">No hay pagos programados</p>
+        <p className="text-gray-600 text-sm mt-2">Cargando calendario...</p>
       </div>
     )
   }
@@ -224,10 +234,10 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
     switch (estado) {
       case 'pagado':
         return <CheckCircle size={16} className="text-green-600" />
-      case 'vencido':
-        return <AlertCircle size={16} className="text-red-600" />
-      default:
+      case 'parcialmente_pagado':
         return <Clock size={16} className="text-yellow-600" />
+      default:
+        return <AlertCircle size={16} className="text-red-600" />
     }
   }
 
@@ -235,20 +245,12 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
     switch (estado) {
       case 'pagado':
         return 'bg-green-50 border-green-200'
-      case 'vencido':
-        return 'bg-red-50 border-red-200'
-      default:
+      case 'parcialmente_pagado':
         return 'bg-yellow-50 border-yellow-200'
+      default:
+        return 'bg-red-50 border-red-200'
     }
   }
-
-  const totalProgramado = pagos.reduce((sum, p) => sum + p.monto_programado, 0)
-  const totalPagado = pagos.reduce((sum, p) => sum + (p.monto_pagado || 0), 0)
-  // Calcular cuotas pagadas directamente: total_pagado / monto_pago
-  const cuotasPagadas = clienteActualizado?.monto_pago ? clienteActualizado.total_pagado / clienteActualizado.monto_pago : 0
-  // Pendiente = suma de lo que falta pagar en cada cuota (monto_programado - monto_pagado)
-  // Esto refleja correctamente cuando el cliente paga más o menos del monto programado
-  const pendiente = pagos.reduce((sum, p) => sum + (p.monto_programado - (p.monto_pagado || 0)), 0)
 
   return (
     <div className="space-y-2" ref={calendarioRef}>
@@ -268,7 +270,7 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
                   ? 'bg-orange-600 hover:bg-orange-700 text-white cursor-pointer'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
-              title={canReestructurar ? 'Reestructurar todas las fechas' : 'No tienes permisos para reestructurar'}
+              title={canReestructurar ? 'Reestructurar todas las fechas' : 'No tienes permisos'}
             >
               <RefreshCw size={14} />
               Reestructurar
@@ -277,7 +279,6 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
               onClick={descargarPDF}
               disabled={generandoPDF}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded"
-              title="Descargar PDF"
             >
               {generandoPDF ? (
                 <>
@@ -294,160 +295,145 @@ export default function CalendarioPagos({ clienteId, cliente }: CalendarioPagosP
           </div>
         </div>
 
-        {/* Info del Gestor y Cuotas Pagadas */}
-        {(gestorNombre || clienteActualizado) && (
+        {/* Info del Gestor */}
+        {(gestorNombre || resumen) && (
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <p className="text-purple-600 font-medium">Gestor Asignado</p>
                 <p className="text-gray-900 font-semibold">{gestorNombre || 'N/A'}</p>
               </div>
-              <div>
-                <p className="text-purple-600 font-medium">Cuotas Pagadas</p>
-                <p className="text-gray-900 font-semibold">{Math.floor(cuotasPagadas)}</p>
-              </div>
+              {resumen && (
+                <div>
+                  <p className="text-purple-600 font-medium">Cuotas Pagadas</p>
+                  <p className="text-gray-900 font-semibold">{resumen.cuotas_pagadas}/{resumen.total_cuotas_programadas}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Resumen Compacto */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <p className="text-xs text-gray-600 font-medium">Programado</p>
-              <p className="text-xs font-bold text-gray-900">{formatCurrency(totalProgramado)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 font-medium">Pagado</p>
-              <p className="text-xs font-bold text-green-600">{formatCurrency(totalPagado)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 font-medium">Pendiente</p>
-              <p className="text-xs font-bold text-red-600">{formatCurrency(pendiente)}</p>
+        {resumen && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Programado</p>
+                <p className="text-xs font-bold text-gray-900">${(resumen.total_programado || 0).toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Pagado</p>
+                <p className="text-xs font-bold text-green-600">${(resumen.total_pagado_realizado || 0).toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Pendiente</p>
+                <p className="text-xs font-bold text-red-600">${(resumen.total_saldo_pendiente || 0).toFixed(2)}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {pagos.map((pago) => (
-          <div
-            key={pago.id}
-            className={`p-2 rounded-lg border text-xs ${estadoColor(pago.estado)}`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2 flex-1">
-                <div className="mt-0.5">{estadoIcon(pago.estado)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-xs text-gray-900">
-                      Cuota {pago.numero_pago}
-                    </span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                      pago.estado === 'pagado'
+      {/* Tabla de Cuotas */}
+      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <table className="w-full text-xs">
+          <thead className="bg-gray-100 border-b border-gray-300">
+            <tr>
+              <th className="px-2 py-2 text-left font-semibold text-gray-700">Cuota</th>
+              <th className="px-2 py-2 text-left font-semibold text-gray-700">Fecha</th>
+              <th className="px-2 py-2 text-right font-semibold text-gray-700">Monto</th>
+              <th className="px-2 py-2 text-right font-semibold text-gray-700">Saldo</th>
+              <th className="px-2 py-2 text-center font-semibold text-gray-700">Estado</th>
+              <th className="px-2 py-2 text-center font-semibold text-gray-700">Acción</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {calendarios.map((cuota) => {
+              const estadoClass = 
+                cuota.estado === 'pagado' ? 'bg-green-50 hover:bg-green-100' :
+                cuota.estado === 'parcialmente_pagado' ? 'bg-yellow-50 hover:bg-yellow-100' :
+                'bg-red-50 hover:bg-red-100';
+              
+              const estadoTexto = 
+                cuota.estado === 'pagado' ? 'Pagado' :
+                cuota.estado === 'parcialmente_pagado' ? 'Parcial' :
+                'Pendiente';
+
+              return (
+                <tr key={cuota.id} className={`${estadoClass} transition-colors`}>
+                  <td className="px-2 py-2 font-semibold text-gray-900">
+                    {cuota.numero_cuota}
+                  </td>
+                  <td className="px-2 py-2 text-gray-700 whitespace-nowrap">
+                    {formatDate(cuota.fecha_programada)}
+                  </td>
+                  <td className="px-2 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
+                    ${cuota.monto_programado.toFixed(2)}
+                  </td>
+                  <td className={`px-2 py-2 text-right font-semibold whitespace-nowrap ${
+                    cuota.saldo_pendiente > 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    ${cuota.saldo_pendiente.toFixed(2)}
+                  </td>
+                  <td className="px-2 py-2 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                      cuota.estado === 'pagado'
                         ? 'bg-green-100 text-green-800'
-                        : pago.estado === 'vencido'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                        : cuota.estado === 'parcialmente_pagado'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
-                      {pago.estado === 'pagado' ? 'Pagado' : pago.estado === 'vencido' ? 'Vencido' : 'Pendiente'}
+                      {estadoTexto}
                     </span>
-                  </div>
-
-                  {/* Fechas */}
-                  <div className="grid grid-cols-2 gap-2 mb-1 text-xs text-gray-600">
-                    <div>
-                      <span className="font-medium">Prog:</span> {formatDate(pago.fecha_programada)}
-                    </div>
-                    {pago.fecha_pago && (
-                      <div>
-                        <span className="font-medium text-green-700">Pagado:</span> {formatDate(pago.fecha_pago)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Gestor */}
-                  {pago.gestor && (
-                    <div className="text-xs text-gray-600 mb-1">
-                      <span className="font-medium">Gestor:</span> {pago.gestor.nombre}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-1">
-                <div>
-                  <p className="text-xs font-semibold text-gray-900">
-                    {formatCurrency(pago.monto_programado)}
-                  </p>
-                  {pago.monto_pagado > 0 && (
-                    <p className="text-xs text-green-600">
-                      {formatCurrency(pago.monto_pagado)}
-                    </p>
-                  )}
-                </div>
-
-                {/* Botones de acción */}
-                <div className="flex gap-1 flex-col">
-                  {pago.estado !== 'pagado' ? (
+                  </td>
+                  <td className="px-2 py-2 text-center">
                     <button
-                      onClick={() => openRegistrarModal(pago)}
-                      disabled={!canRegisterPayments}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                        canRegisterPayments
-                          ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      onClick={() => openRegistrarModal(cuota)}
+                      disabled={!canRegisterPayments || cuota.estado === 'pagado'}
+                      className={`inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        canRegisterPayments && cuota.estado !== 'pagado'
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
-                      title={canRegisterPayments ? 'Registrar pago' : 'No tienes permisos para registrar pagos'}
+                      title={cuota.estado === 'pagado' ? 'Cuota pagada' : 'Registrar pago'}
                     >
                       <Plus size={12} />
-                      Registrar
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => openRegistrarModal(pago)}
-                      disabled={!canRegisterPayments}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        canRegisterPayments
-                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      }`}
-                      title={canRegisterPayments ? 'Editar pago registrado' : 'No tienes permisos para editar pagos'}
-                    >
-                      <Edit2 size={12} />
-                      Editar
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {pago.notas && (
-              <div className="mt-2 text-xs text-gray-600 italic border-t pt-2">
-                {pago.notas}
-              </div>
-            )}
-          </div>
-        ))}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Modal para registrar/editar pagos */}
-      {showModal && selectedPago && (
-        <ModalRegistrarPago
-          pago={selectedPago}
-          cliente={clienteActualizado}
-          onClose={() => {
-            setShowModal(false)
-            setSelectedPago(null)
+      {/* Histórico de Pagos Realizados */}
+      <div className="border-t pt-3 mt-3">
+        <HistorialPagosRealizados
+          clienteId={clienteId}
+          refreshTrigger={refreshHistorial}
+          onPagoChanged={() => {
+            // Cuando hay cambios en el histórico, recargar calendarios y notificar
+            loadCalendarios()
+            onPagoRegistrado?.()
           }}
-          onSuccess={handlePagoRegistered}
+        />
+      </div>
+
+      {/* Modales */}
+      {showModal && selectedCuota && (
+        <ModalRegistrarPagoRealizado
+          clienteId={clienteId}
+          cuota={selectedCuota}
+          cliente={clienteActualizado}
+          onClose={() => setShowModal(false)}
+          onSuccess={handlePagoRegistrado}
         />
       )}
 
-      {/* Modal para reestructurar calendario */}
       {showModalReestructurar && (
         <ModalReestructurarCalendario
-          pagos={pagos}
+          clienteId={clienteId}
           onClose={() => setShowModalReestructurar(false)}
           onSuccess={handleFechaActualizada}
         />

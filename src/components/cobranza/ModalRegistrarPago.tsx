@@ -54,7 +54,7 @@ export default function ModalRegistrarPago({
     defaultValues: {
       monto_pagado: pago.monto_pagado || pago.monto_programado,
       fecha_pago: pago.fecha_pago || new Date().toISOString().split('T')[0],
-      gestor_id: pago.gestor_id || cliente?.gestor_id || '',
+      gestor_id: cliente?.gestor_id || '',
       notas: pago.notas || '',
       motivo_cambio: '',
     },
@@ -70,25 +70,23 @@ export default function ModalRegistrarPago({
     loadGestores()
   }, [obtenerGestores])
 
-  // Actualizar gestor_id cuando pago o cliente cambie, después de que los gestores hayan cargado
+  // Pre-seleccionar gestor del cliente después de que los gestores hayan cargado
   useEffect(() => {
-    if (gestores.length > 0) {
-      const gestorId = pago.gestor_id || cliente?.gestor_id
-      if (gestorId) {
-        setValue('gestor_id', gestorId)
-      }
+    if (gestores.length > 0 && cliente?.gestor_id) {
+      setValue('gestor_id', cliente.gestor_id)
     }
-  }, [gestores, pago.gestor_id, cliente?.gestor_id, setValue])
+  }, [gestores, cliente?.gestor_id, setValue])
 
   const onSubmit = async (data: RegistrarPagoInput | EditarPagoInput) => {
     let success = false
     if (esEdicion) {
-      success = await editarPago(pago.id, pago.cliente_id, data as EditarPagoInput)
+      success = await editarPago(pago.id, data as EditarPagoInput)
     } else {
-      success = await registrarPago(pago.id, pago.cliente_id, data as RegistrarPagoInput)
+      success = await registrarPago(pago.cliente_id, data as RegistrarPagoInput)
     }
     if (success) {
       onSuccess()
+      onClose()
     }
   }
 
@@ -112,9 +110,9 @@ export default function ModalRegistrarPago({
           <div className="bg-blue-50 p-2 rounded-lg">
             <p className="text-xs text-gray-600">Cliente</p>
             <p className="font-semibold text-sm text-gray-900">
-              {(pago.cliente as any)?.nombre_completo}
+              {(pago.clientes as any)?.nombre_completo || cliente?.nombre_completo}
             </p>
-            <p className="text-xs text-gray-600 mt-1">Cuota {pago.numero_pago}</p>
+            <p className="text-xs text-gray-600 mt-1">Cuota {pago.numero_cuota}</p>
             <p className="font-medium text-sm text-blue-600 mt-0.5">
               {formatCurrency(pago.monto_programado)}
             </p>

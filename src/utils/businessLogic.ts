@@ -2,16 +2,24 @@
  * Helpers para lógica de negocio crítica
  */
 
-import type { Pago, FrecuenciaPago } from '@/types';
-// import { addDays, addMonths } from './dateHelpers';
+import type { FrecuenciaPago } from '@/types';
 
 /**
  * Genera el calendario completo de pagos para un cliente
  * Para pagos quincenales, alterna entre dia_pago y dia_pago_2
  * dia_pago_2 es temporal (solo para generar calendario, no se almacena en BD)
+ * 
+ * Retorna la estructura para tabla calendarios_pagos (nueva arquitectura)
  */
-export function generarCalendarioPagos(cliente: any): Omit<Pago, 'id' | 'created_at'>[] {
-  const pagos: Omit<Pago, 'id' | 'created_at'>[] = [];
+export function generarCalendarioPagos(cliente: any): Array<{
+  cliente_id: string;
+  numero_cuota: number;
+  fecha_programada: string;
+  monto_programado: number;
+  estado: 'pendiente';
+  saldo_pendiente: number;
+}> {
+  const cuotas = [];
   const fechaInicio = new Date(cliente.fecha_primer_pago);
   const añoInicio = fechaInicio.getFullYear();
   const mesInicio = fechaInicio.getMonth();
@@ -40,19 +48,18 @@ export function generarCalendarioPagos(cliente: any): Omit<Pago, 'id' | 'created
       fechaProgramada = new Date(año, mes, cliente.dia_pago);
     }
 
-    pagos.push({
+    const montoProgramado = cliente.monto_pago;
+    cuotas.push({
       cliente_id: cliente.id,
-      gestor_id: cliente.gestor_id,
-      numero_pago: i,
+      numero_cuota: i,
       fecha_programada: fechaProgramada.toISOString().split('T')[0],
-      monto_programado: cliente.monto_pago,
-      monto_pagado: 0,
-      dias_atraso: 0,
+      monto_programado: montoProgramado,
       estado: 'pendiente',
+      saldo_pendiente: montoProgramado,
     });
   }
 
-  return pagos;
+  return cuotas;
 }
 
 /**

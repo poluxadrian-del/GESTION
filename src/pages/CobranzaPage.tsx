@@ -44,6 +44,16 @@ export default function CobranzaPage() {
     loadData()
   }, [currentPage, filterCliente, filterFechaDesde, filterFechaHasta, filterGestor, currentPageCartera, filterGestorCartera, selectedTab])
 
+  // Resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterCliente, filterFechaDesde, filterFechaHasta, filterGestor])
+
+  // Resetear a página 1 cartera cuando cambian filtros
+  useEffect(() => {
+    setCurrentPageCartera(1)
+  }, [filterGestorCartera])
+
   const loadData = async () => {
     setLoading(true)
     try {
@@ -121,7 +131,7 @@ export default function CobranzaPage() {
 
   const getUniqueGestores = () => {
     const gestores = pagosPendientes
-      .map((p) => (p.gestor as any)?.nombre)
+      .map((p) => (p.clientes as any)?.gestor?.nombre)
       .filter((g, i, arr) => g && arr.indexOf(g) === i)
       .sort()
     return gestores
@@ -129,7 +139,7 @@ export default function CobranzaPage() {
 
   const getUniqueGestoresCartera = () => {
     const gestores = pagosVencidos
-      .map((p) => (p.gestor as any)?.nombre)
+      .map((p) => (p.clientes as any)?.gestor?.nombre)
       .filter((g, i, arr) => g && arr.indexOf(g) === i)
       .sort()
     return gestores
@@ -343,7 +353,7 @@ export default function CobranzaPage() {
       {selectedPago && (
         <ModalRegistrarPago
           pago={selectedPago}
-          cliente={selectedPago.cliente as any}
+          cliente={selectedPago.clientes as any}
           onClose={() => setSelectedPago(null)}
           onSuccess={handleSeguimientoRegistered}
         />

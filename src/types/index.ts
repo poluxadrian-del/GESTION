@@ -66,9 +66,68 @@ export interface Cliente {
   };
 }
 
-// ============ PAGOS ============
+// ============ CALENDARIOS DE PAGOS (Plan de cobro) ============
+export type EstadoCalendarioPago = 'pendiente' | 'parcialmente_pagado' | 'pagado';
+
+/**
+ * Plan de cobro del cliente
+ * Una fila = Una cuota programada
+ * Se genera automáticamente al crear el cliente
+ */
+export interface CalendarioPago {
+  id: string;
+  cliente_id: string;
+  numero_cuota: number;  // 1, 2, 3...
+  fecha_programada: string;  // Cuándo se debe cobrar
+  monto_programado: number;  // Monto esperado
+  estado: EstadoCalendarioPago;  // Estado de pago de esta cuota
+  saldo_pendiente: number;  // Lo que falta por pagar
+  notas?: string;
+  created_at: string;
+  updated_at: string;
+  // Relaciones (joins)
+  cliente?: {
+    id: string;
+    nombre_completo: string;
+    numero_contrato: string;
+  };
+}
+
+// ============ PAGOS REALIZADOS (Registro de pagos efectuados) ============
+/**
+ * Registro de TODOS los pagos del cliente
+ * Una fila = Un pago realizado (puede ser parcial, total, o exceso)
+ */
+export interface PagoRealizado {
+  id: string;
+  cliente_id: string;
+  gestor_id?: string;
+  fecha_pago: string;  // Cuándo se pagó
+  monto_pagado: number;  // Cuánto se pagó (FLEXIBLE - puede ser cualquier monto)
+  notas?: string;
+  created_at: string;
+  // Reversión
+  motivo_eliminacion?: string | null;  // Motivo por el que se reversó el pago
+  fecha_eliminacion?: string | null;   // Cuándo se reversó
+  // Relaciones (joins)
+  cliente?: {
+    id: string;
+    nombre_completo: string;
+    numero_contrato: string;
+  };
+  gestor?: {
+    id: string;
+    nombre: string;
+  };
+}
+
+// ============ PAGOS (LEGACY - Compatibilidad hacia atrás) ============
 export type EstadoPago = 'pendiente' | 'pagado' | 'vencido';
 
+/**
+ * @deprecated Usar CalendarioPago y PagoRealizado en su lugar
+ * Esta interfaz se mantiene solo para compatibilidad con código existente
+ */
 export interface Pago {
   id: string;
   cliente_id: string;

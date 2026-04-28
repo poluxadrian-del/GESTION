@@ -196,21 +196,11 @@ export const useClientes = () => {
         throw err
       }
 
-      // Si el gestor_id cambió, actualizar los pagos pendientes
+      // Si el gestor_id cambió, actualizar los pagos realizados pendientes
       if (clienteAnterior.gestor_id !== cliente.gestor_id) {
         console.log('Gestor cambió de', clienteAnterior.gestor_id, 'a', cliente.gestor_id);
-        // Actualizar pagos pendientes con el nuevo gestor_id
-        const { error: errPagos } = await supabase
-          .from('pagos')
-          .update({ gestor_id: cliente.gestor_id })
-          .eq('cliente_id', id)
-          .eq('estado', 'pendiente');
-
-        if (errPagos) {
-          console.error('Error al actualizar gestor en pagos pendientes:', errPagos);
-        } else {
-          console.log('Pagos pendientes actualizados con nuevo gestor');
-        }
+        // Nota: Los calendarios_pagos no tienen gestor_id (es atributo del cliente)
+        // Solo se actualiza en pagos_realizados futuros al registrar nuevos pagos
       }
 
       console.log('Cliente actualizado exitosamente:', cliente)
@@ -293,21 +283,21 @@ export const useClientes = () => {
       console.log('Generando calendario para cliente:', clienteId, 'numero_pagos:', numeroPagos)
 
       // Generar calendario de pagos
-      const pagos = generarCalendarioPagos(clienteConFecha);
-      console.log('Calendarios generados:', pagos.length, 'cuotas', pagos)
+      const calendarios = generarCalendarioPagos(clienteConFecha);
+      console.log('Calendarios generados:', calendarios.length, 'cuotas', calendarios)
 
-      if (pagos.length === 0) {
-        throw new Error('No se pudieron generar los pagos');
+      if (calendarios.length === 0) {
+        throw new Error('No se pudieron generar los calendarios de pagos');
       }
 
-      // Insertar pagos
-      const { error: errPagos } = await supabase
-        .from('pagos')
-        .insert(pagos);
+      // Insertar calendarios de pagos
+      const { error: errCalendarios } = await supabase
+        .from('calendarios_pagos')
+        .insert(calendarios);
 
-      if (errPagos) {
-        console.error('Error Supabase al crear pagos:', errPagos)
-        throw errPagos
+      if (errCalendarios) {
+        console.error('Error Supabase al crear calendarios:', errCalendarios)
+        throw errCalendarios
       }
 
       console.log('Pagos insertados correctamente. Actualizando estado del cliente...')

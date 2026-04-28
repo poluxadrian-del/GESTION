@@ -54,6 +54,17 @@ export default function ClientesPage() {
     setClientes(data)
   }
 
+  // Sincronizar selectedCliente cuando la lista de clientes cambia
+  // Esto asegura que ClienteDetail siempre muestre datos actualizados (ej: total_pagado)
+  useEffect(() => {
+    if (selectedCliente) {
+      const clienteActualizado = clientes.find(c => c.id === selectedCliente.id)
+      if (clienteActualizado) {
+        setSelectedCliente(clienteActualizado)
+      }
+    }
+  }, [clientes])
+
   // Filtrar clientes por búsqueda y estado
   const filteredClientes = clientes.filter(cliente => {
     const matchSearch = cliente.nombre_completo.toLowerCase().includes(search.toLowerCase()) ||
@@ -134,6 +145,25 @@ export default function ClientesPage() {
   const handleViewCalendar = (cliente: Cliente) => {
     setSelectedCliente(cliente)
     setShowCalendarModal(true)
+  }
+
+  const handlePagoRegistradoEnCalendario = async () => {
+    // Los triggers automáticamente actualizaron:
+    // - clientes.total_pagado
+    // - calendarios_pagos.saldo_pendiente
+    // - calendarios_pagos.estado
+    
+    // Recargar lista completa para obtener datos frescos con saldo recalculado
+    const clientesActualizados = await obtenerClientes()
+    setClientes(clientesActualizados)
+    
+    // Sincronizar el cliente seleccionado con datos nuevos (importante para ClienteDetail)
+    if (selectedCliente) {
+      const clienteActualizado = clientesActualizados.find(c => c.id === selectedCliente.id)
+      if (clienteActualizado) {
+        setSelectedCliente(clienteActualizado)
+      }
+    }
   }
 
   const handleImportarExcel = () => {
@@ -392,6 +422,7 @@ export default function ClientesPage() {
       >
         {selectedCliente && (
           <ClienteDetail
+            key={selectedCliente.id}
             cliente={selectedCliente}
             onShowHistorial={() => {
               setShowDetailModal(false)
@@ -412,7 +443,11 @@ export default function ClientesPage() {
         size="xl"
       >
         {selectedCliente && (
-          <CalendarioPagos clienteId={selectedCliente.id} cliente={selectedCliente} />
+          <CalendarioPagos 
+            clienteId={selectedCliente.id} 
+            cliente={selectedCliente}
+            onPagoRegistrado={handlePagoRegistradoEnCalendario}
+          />
         )}
       </Modal>
 

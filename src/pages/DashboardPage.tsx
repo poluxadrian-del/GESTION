@@ -1,27 +1,27 @@
 import { useEffect, useState } from 'react'
 import { usePagos } from '@/hooks/usePagos'
-import TotalClientesActivos from '@/components/dashboard/TotalClientesActivos'
-import ClientesPorGestor from '@/components/dashboard/ClientesPorGestor'
+import ClientesConPendientesAlDia from '@/components/dashboard/ClientesConPendientesAlDia'
 
-interface DashboardData {
-  totalClientesActivos: number;
-  clientesPorGestor: Array<{
+interface PendientesData {
+  totalClientesConPendientes: number;
+  totalVencido: number;
+  totalClientes: number;
+  porGestor: Array<{
     gestorId: string;
-    gestor: {
-      id: string;
-      nombre: string;
-    } | null;
-    totalClientes: number;
-    clientesCobrados: number;
-    porcentajeCobrado: number;
+    gestorNombre: string;
+    clientesConPendientes: number;
+    totalClientesGestor: number;
+    totalVencidoGestor: number;
   }>;
 }
 
 export default function DashboardPage() {
-  const { obtenerDashboardMesActual, loading } = usePagos()
-  const [dashboardData, setDashboardData] = useState<DashboardData>({
-    totalClientesActivos: 0,
-    clientesPorGestor: [],
+  const { obtenerClientesPendientesAlDia, loading } = usePagos()
+  const [pendientesData, setPendientesData] = useState<PendientesData>({
+    totalClientesConPendientes: 0,
+    totalVencido: 0,
+    totalClientes: 0,
+    porGestor: [],
   })
 
   useEffect(() => {
@@ -29,9 +29,9 @@ export default function DashboardPage() {
   }, [])
 
   const loadDashboardData = async () => {
-    const data = await obtenerDashboardMesActual()
-    if (data) {
-      setDashboardData(data)
+    const pendientes = await obtenerClientesPendientesAlDia()
+    if (pendientes) {
+      setPendientesData(pendientes)
     }
   }
 
@@ -42,23 +42,15 @@ export default function DashboardPage() {
         <p className="text-gray-600 mt-1">Pagos vencidos y seguimiento de cobranza</p>
       </div>
 
-      {/* Grid principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        {/* Total de clientes activos - ocupa 1 columna */}
-        <div className="lg:col-span-1 xl:col-span-1">
-          <TotalClientesActivos
-            total={dashboardData.totalClientesActivos}
-            loading={loading}
-          />
-        </div>
-
-        {/* Clientes por gestor - ocupa el resto */}
-        <div className="lg:col-span-1 xl:col-span-3">
-          <ClientesPorGestor
-            datos={dashboardData.clientesPorGestor}
-            loading={loading}
-          />
-        </div>
+      {/* Clientes con pendientes al día */}
+      <div className="mb-8">
+        <ClientesConPendientesAlDia
+          totalClientesConPendientes={pendientesData.totalClientesConPendientes}
+          totalVencido={0}
+          totalClientes={0}
+          porGestor={pendientesData.porGestor}
+          loading={loading}
+        />
       </div>
 
       {/* Botón para actualizar datos */}
