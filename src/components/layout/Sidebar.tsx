@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import { LayoutGrid, Users, UserCheck, CreditCard, BarChart3, LogOut, X } from 'lucide-react'
+import { LayoutGrid, Users, UserCheck, CreditCard, BarChart3, Percent, LogOut, X } from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -18,6 +18,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
     { path: '/gestores', label: 'Gestores', icon: UserCheck, roles: ['socio', 'admin'] },
     { path: '/cobranza', label: 'Cobranza', icon: CreditCard, roles: ['socio', 'admin', 'supervisor'] },
     { path: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['socio', 'admin', 'supervisor'] },
+    { path: '/comisiones', label: 'Comisiones', icon: Percent, roles: ['socio'] },
   ]
 
   const filteredItems = navItems.filter(item =>

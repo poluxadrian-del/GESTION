@@ -329,6 +329,7 @@ export const usePagos = () => {
             numero_contrato,
             gestor_id,
             total_pagado,
+            estado,
             gestor:gestor_id (
               id,
               nombre
@@ -355,6 +356,9 @@ export const usePagos = () => {
       if (err) throw err;
 
       let filteredData = data || [];
+
+      // Filtrar solo clientes con estado activo
+      filteredData = filteredData.filter((item: any) => item.clientes?.estado === 'activo');
 
       // Filtrar por cliente en memoria (Supabase no permite .or() en relaciones anidadas)
       if (filters.cliente) {
@@ -417,6 +421,7 @@ export const usePagos = () => {
             numero_contrato,
             gestor_id,
             total_pagado,
+            estado,
             gestor:gestor_id (
               id,
               nombre
@@ -432,6 +437,9 @@ export const usePagos = () => {
       if (err) throw err;
 
       let filteredData = data || [];
+
+      // Filtrar solo clientes con estado activo
+      filteredData = filteredData.filter((item: any) => item.clientes?.estado === 'activo');
 
       // Filtrar por gestor en memoria
       if (filters.gestor) {
@@ -695,13 +703,15 @@ export const usePagos = () => {
         }
       });
 
-      const porGestor = Array.from(datosPorGestor.values()).map(d => ({
-        gestorId: d.gestorId,
-        gestorNombre: d.gestorNombre,
-        clientesConPendientes: d.clientesConPendientes.size,
-        totalClientesGestor: d.totalClientesGestor,
-        totalVencidoGestor: d.totalVencido,
-      }));
+      const porGestor = Array.from(datosPorGestor.values())
+        .filter(d => d.clientesConPendientes.size > 0)  // Solo gestores con al menos 1 cliente por cobrar
+        .map(d => ({
+          gestorId: d.gestorId,
+          gestorNombre: d.gestorNombre,
+          clientesConPendientes: d.clientesConPendientes.size,
+          totalClientesGestor: d.totalClientesGestor,
+          totalVencidoGestor: d.totalVencido,
+        }));
 
       const totalClientes = todosClientes?.filter((c: any) => c.estado === 'activo').length || 0;
 

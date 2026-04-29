@@ -8,6 +8,7 @@ import ClientesPage from './pages/ClientesPage'
 import GestoresPage from './pages/GestoresPage'
 import CobranzaPage from './pages/CobranzaPage'
 import ReportesPage from './pages/ReportesPage'
+import ComisionesPage from './pages/ComisionesPage'
 import RootLayout from './components/layout/RootLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 
@@ -96,6 +97,17 @@ function App() {
               <ProtectedRoute>
                 <RootLayout>
                   <ReportesPage />
+                </RootLayout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/comisiones"
+            element={
+              <ProtectedRoute>
+                <RootLayout>
+                  <ComisionesPage />
                 </RootLayout>
               </ProtectedRoute>
             }
