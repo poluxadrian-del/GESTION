@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePagos } from '@/hooks/usePagos'
+import { useGestores } from '@/hooks/useGestores'
 import { useAuthStore } from '@/store/authStore'
 import type { Pago } from '@/types'
 import PagosTable from '@/components/cobranza/PagosTable'
@@ -9,12 +10,20 @@ import ModalRegistrarPago from '@/components/cobranza/ModalRegistrarPago'
 import ModalRegistrarSeguimiento from '@/components/cobranza/ModalRegistrarSeguimiento'
 import toast from 'react-hot-toast'
 
+interface Gestor {
+  id: string
+  nombre: string
+  activo: boolean
+}
+
 export default function CobranzaPage() {
   const { obtenerPagosPendientes, obtenerCarteraVencida } = usePagos()
+  const { obtenerGestores } = useGestores()
   const { usuario } = useAuthStore()
   const [selectedTab, setSelectedTab] = useState<'pendientes' | 'vencidos'>('pendientes')
   const [pagosPendientes, setPagosPendientes] = useState<Pago[]>([])
   const [pagosVencidos, setPagosVencidos] = useState<Pago[]>([])
+  const [gestores, setGestores] = useState<Gestor[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null)
   const [selectedPagoSeguimiento, setSelectedPagoSeguimiento] = useState<Pago | null>(null)
@@ -43,6 +52,15 @@ export default function CobranzaPage() {
   useEffect(() => {
     loadData()
   }, [currentPage, filterCliente, filterFechaDesde, filterFechaHasta, filterGestor, currentPageCartera, filterGestorCartera, selectedTab])
+
+  // Cargar gestores al montar el componente
+  useEffect(() => {
+    const loadGestores = async () => {
+      const gestoresData = await obtenerGestores(true)
+      setGestores(gestoresData)
+    }
+    loadGestores()
+  }, [])
 
   // Resetear a página 1 cuando cambian los filtros
   useEffect(() => {
@@ -136,22 +154,6 @@ export default function CobranzaPage() {
     }
   }
 
-  const getUniqueGestores = () => {
-    const gestores = pagosPendientes
-      .map((p) => (p.cliente as any)?.gestor?.nombre)
-      .filter((g, i, arr) => g && arr.indexOf(g) === i)
-      .sort()
-    return gestores
-  }
-
-  const getUniqueGestoresCartera = () => {
-    const gestores = pagosVencidos
-      .map((p) => (p.cliente as any)?.gestor?.nombre)
-      .filter((g, i, arr) => g && arr.indexOf(g) === i)
-      .sort()
-    return gestores
-  }
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Cobranza</h1>
@@ -227,9 +229,9 @@ export default function CobranzaPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Todos</option>
-                      {getUniqueGestores().map((gestor) => (
-                        <option key={gestor} value={gestor}>
-                          {gestor}
+                      {gestores.map((gestor) => (
+                        <option key={gestor.id} value={gestor.nombre}>
+                          {gestor.nombre}
                         </option>
                       ))}
                     </select>
@@ -297,9 +299,9 @@ export default function CobranzaPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Todos</option>
-                      {getUniqueGestoresCartera().map((gestor) => (
-                        <option key={gestor} value={gestor}>
-                          {gestor}
+                      {gestores.map((gestor) => (
+                        <option key={gestor.id} value={gestor.nombre}>
+                          {gestor.nombre}
                         </option>
                       ))}
                     </select>

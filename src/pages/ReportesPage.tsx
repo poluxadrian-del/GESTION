@@ -18,6 +18,7 @@ export default function ReportesPage() {
   const [gestorSeleccionado, setGestorSeleccionado] = useState('');
   const [estadoPagoFilter, setEstadoPagoFilter] = useState('');
   const [facturaFilter, setFacturaFilter] = useState('');
+  const [estadoClienteFilter, setEstadoClienteFilter] = useState('');
 
   const { loading, obtenerReporteCobranza, obtenerReportePagosCobrar } = useReportes();
   const { obtenerGestores } = useGestores();
@@ -38,7 +39,8 @@ export default function ReportesPage() {
         fechaDesde || undefined,
         fechaHasta || undefined,
         gestorSeleccionado || undefined,
-        facturaFilter !== '' ? (facturaFilter === 'true' ? true : false) : undefined
+        facturaFilter !== '' ? (facturaFilter === 'true' ? true : false) : undefined,
+        estadoClienteFilter || undefined
       );
       setReporteCobranza(data);
     } else {
@@ -58,6 +60,7 @@ export default function ReportesPage() {
     setGestorSeleccionado('');
     setEstadoPagoFilter('');
     setFacturaFilter('');
+    setEstadoClienteFilter('');
   };
 
   const descargarReporte = () => {
@@ -66,6 +69,7 @@ export default function ReportesPage() {
         'Fecha Pago': formatDate(r.fecha_pago),
         'Contrato': r.numero_contrato,
         'Cliente': r.cliente_nombre,
+        'Estado': r.estado_cliente,
         'Gestor': r.gestor_nombre,
         'Monto Pagado': formatCurrency(r.monto_pagado),
       }));
@@ -173,20 +177,38 @@ export default function ReportesPage() {
           </div>
 
           {activeTab === 'cobranza' && (
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                Factura
-              </label>
-              <select
-                value={facturaFilter || ''}
-                onChange={(e) => setFacturaFilter(e.target.value as any)}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todos</option>
-                <option value="true">Sí</option>
-                <option value="false">No</option>
-              </select>
-            </div>
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Factura
+                </label>
+                <select
+                  value={facturaFilter || ''}
+                  onChange={(e) => setFacturaFilter(e.target.value as any)}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                  <option value="true">Sí</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Estado Cliente
+                </label>
+                <select
+                  value={estadoClienteFilter}
+                  onChange={(e) => setEstadoClienteFilter(e.target.value)}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                  <option value="pausa">Pausa</option>
+                  <option value="liquidado">Liquidado</option>
+                </select>
+              </div>
+            </>
           )}
 
           {activeTab === 'pagos' && (
@@ -259,6 +281,7 @@ export default function ReportesPage() {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Fecha Pago</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Contrato</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Cliente</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Estado</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Gestor</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Monto Pagado</th>
                 </tr>
@@ -266,13 +289,13 @@ export default function ReportesPage() {
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={6} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Cargando...
                     </td>
                   </tr>
                 ) : reporteCobranza.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={6} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Presiona "Cargar" para ver los datos
                     </td>
                   </tr>
@@ -282,6 +305,19 @@ export default function ReportesPage() {
                       <td className="px-3 py-2 text-xs text-gray-900">{formatDate(r.fecha_pago)}</td>
                       <td className="px-3 py-2 text-xs text-gray-600">{r.numero_contrato}</td>
                       <td className="px-3 py-2 text-xs font-medium text-gray-900">{r.cliente_nombre}</td>
+                      <td className="px-3 py-2 text-xs">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          r.estado_cliente === 'activo'
+                            ? 'bg-green-100 text-green-800'
+                            : r.estado_cliente === 'pausa'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : r.estado_cliente === 'liquidado'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {r.estado_cliente?.charAt(0).toUpperCase() + r.estado_cliente?.slice(1)}
+                        </span>
+                      </td>
                       <td className="px-3 py-2 text-xs text-gray-600">{r.gestor_nombre}</td>
                       <td className="px-3 py-2 text-xs text-right font-semibold text-gray-900">
                         {formatCurrency(r.monto_pagado)}

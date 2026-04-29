@@ -9,6 +9,7 @@ export interface ReporteCobranza {
   monto_pagado: number;
   numero_pago: number;
   numero_contrato: string;
+  estado_cliente: string;
 }
 
 export interface ReportePagosCobrar {
@@ -31,7 +32,8 @@ export const useReportes = () => {
     fechaDesde?: string,
     fechaHasta?: string,
     gestorId?: string,
-    factura?: boolean
+    factura?: boolean,
+    estadoCliente?: string
   ) => {
     setLoading(true);
     setError(null);
@@ -45,7 +47,7 @@ export const useReportes = () => {
       while (hasMore) {
         let query = supabase
           .from('pagos_realizados')
-          .select('fecha_pago, monto_pagado, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, numero_contrato, factura), gestor:gestor_id(nombre)')
+          .select('fecha_pago, monto_pagado, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, numero_contrato, factura, estado), gestor:gestor_id(nombre)')
           .not('fecha_pago', 'is', null)
           .order('fecha_pago', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
@@ -77,12 +79,18 @@ export const useReportes = () => {
         }
       }
 
-      // Filtrar por factura en el lado del cliente si se especifica
+      // Filtrar por factura y estado del cliente en el lado del cliente
       let reporteData = allData;
       if (factura !== undefined) {
         reporteData = reporteData.filter(p => {
           const clienteFactura = (p.cliente as any)?.factura;
           return clienteFactura === factura;
+        });
+      }
+      if (estadoCliente) {
+        reporteData = reporteData.filter(p => {
+          const clienteEstado = (p.cliente as any)?.estado;
+          return clienteEstado === estadoCliente;
         });
       }
 
@@ -94,6 +102,7 @@ export const useReportes = () => {
         gestor_nombre: (p.gestor as any)?.nombre || '-',
         monto_pagado: p.monto_pagado || 0,
         numero_contrato: (p.cliente as any)?.numero_contrato || '',
+        estado_cliente: (p.cliente as any)?.estado || '',
       }));
 
       return reporte;
