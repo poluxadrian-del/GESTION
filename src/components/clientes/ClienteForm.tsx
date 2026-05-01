@@ -196,11 +196,17 @@ export default function ClienteForm({
         }
         
         console.log('GenerarCalendario - datos normalizados:', normalizedData)
+        
+        // IMPORTANTE: Guardar primero los cambios antes de generar calendario
         await onSubmit(normalizedData)
-        console.log('GenerarCalendario - Cambios guardados, ahora generando calendario...')
+        console.log('GenerarCalendario - Cambios guardados exitosamente')
+        
+        // Esperar un momento para asegurar sincronización de datos
+        await new Promise(resolve => setTimeout(resolve, 500))
         
         // Generar calendario después de guardar
         if (onGenerarCalendario) {
+          console.log('GenerarCalendario - Iniciando generación de calendario...')
           await onGenerarCalendario()
           console.log('GenerarCalendario - Calendario generado exitosamente')
         }
@@ -208,6 +214,7 @@ export default function ClienteForm({
         reset()
       } catch (error) {
         console.error('Error en GenerarCalendario:', error)
+        toast.error('Error al generar calendario. Intenta de nuevo.')
       }
     })()
   }
@@ -314,7 +321,7 @@ export default function ClienteForm({
           {cliente && (
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Descuento</label>
-              <input {...register('descuento', { valueAsNumber: true })} type="number" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" placeholder="0" />
+              <input {...register('descuento', { valueAsNumber: true })} type="number" step="0.01" disabled className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-100 cursor-not-allowed" placeholder="0" />
               {renderFieldError('descuento')}
             </div>
           )}
@@ -360,7 +367,7 @@ export default function ClienteForm({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Mensualidades *</label>
-            <input {...register('mensualidades', { valueAsNumber: true })} type="number" min="2" max="18" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" placeholder="12" />
+            <input {...register('mensualidades', { valueAsNumber: true })} type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" placeholder="12" />
             {renderFieldError('mensualidades')}
           </div>
           <div>

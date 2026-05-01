@@ -2,8 +2,9 @@ import type { FrecuenciaPago } from '@/types';
 
 /**
  * Genera el calendario completo de pagos para un cliente
- * Para pagos quincenales, alterna entre dia_pago y dia_pago_2
- * dia_pago_2 es temporal (solo para generar calendario, no se almacena en BD)
+ * Utiliza fecha_primer_pago como inicio y suma periodos según la frecuencia:
+ * - Mensual: suma 1 mes por cada cuota
+ * - Quincenal: suma 15 días por cada cuota
  * 
  * Retorna la estructura para tabla calendarios_pagos (nueva arquitectura)
  */
@@ -23,32 +24,23 @@ export function generarCalendarioPagos(cliente: any): Array<{
     estado: 'pendiente';
     saldo_pendiente: number;
   }> = [];
+  
+  // Iniciar siempre desde fecha_primer_pago
   const fechaInicio = new Date(cliente.fecha_primer_pago);
-  const añoInicio = fechaInicio.getFullYear();
-  const mesInicio = fechaInicio.getMonth();
 
   for (let i = 1; i <= cliente.numero_pagos; i++) {
     let fechaProgramada: Date;
 
     if (cliente.frecuencia_pago === 'quincenal') {
-      // Para quincenales: calcular qué quincena le toca (0=primera, 1=segunda)
-      const indiceQuincena = (i - 1) % 2;
-      // Calcular en qué mes cae este pago (cada 2 pagos = 1 mes)
-      const mesesAvanzados = Math.floor((i - 1) / 2);
-      const año = añoInicio + Math.floor((mesInicio + mesesAvanzados) / 12);
-      const mes = (mesInicio + mesesAvanzados) % 12;
-
-      // Usar dia_pago_2 si está disponible (temporal del formulario), si no calcular automáticamente
-      const diaPago2 = cliente._diaPago2Temporal;
-      const diaTarget = indiceQuincena === 0 ? cliente.dia_pago : (diaPago2 || calcularDiaPago2(cliente.dia_pago));
-      
-      fechaProgramada = new Date(año, mes, diaTarget);
+      // Para quincenales: sumar 15 días por cada cuota
+      fechaProgramada = new Date(fechaInicio);
+      const diasAvanzados = (i - 1) * 15;
+      fechaProgramada.setDate(fechaProgramada.getDate() + diasAvanzados);
     } else {
-      // Para mensuales: mismo día cada mes
+      // Para mensuales: sumar 1 mes por cada cuota
+      fechaProgramada = new Date(fechaInicio);
       const mesesAvanzados = i - 1;
-      const año = añoInicio + Math.floor((mesInicio + mesesAvanzados) / 12);
-      const mes = (mesInicio + mesesAvanzados) % 12;
-      fechaProgramada = new Date(año, mes, cliente.dia_pago);
+      fechaProgramada.setMonth(fechaProgramada.getMonth() + mesesAvanzados);
     }
 
     const montoProgramado = cliente.monto_pago;
@@ -63,17 +55,6 @@ export function generarCalendarioPagos(cliente: any): Array<{
   }
 
   return cuotas;
-}
-
-/**
- * Calcula automáticamente el día de la segunda quincena basado en el día de la primera
- * Ejemplos:
- * - dia_pago=1 -> retorna 16
- * - dia_pago=5 -> retorna 20
- * - dia_pago=15 -> retorna 30
- */
-function calcularDiaPago2(diaPago: number): number {
-  return Math.min(diaPago + 15, 31);
 }
 
 /**
