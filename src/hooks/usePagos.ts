@@ -339,17 +339,14 @@ export const usePagos = () => {
         .in('estado', ['pendiente', 'parcialmente_pagado'])
         .order('fecha_programada', { ascending: true });
 
-      // Filtro por rango de fechas - si no hay filtros, mostrar solo AL DÍA (fecha <= hoy)
+      // Filtro por rango de fechas - siempre aplicar límite superior (hoy si no hay fechaHasta)
       if (filters.fechaDesde) {
         query = query.gte('fecha_programada', filters.fechaDesde);
-      } else if (!filters.fechaHasta) {
-        // Si no hay filtro de fechas, solo mostrar pendientes al día (fecha <= hoy)
-        query = query.lte('fecha_programada', hoy);
       }
 
-      if (filters.fechaHasta) {
-        query = query.lte('fecha_programada', filters.fechaHasta);
-      }
+      // Aplicar límite superior: si hay fechaHasta usar esa, si no usar hoy
+      const fechaHasta = filters.fechaHasta || hoy;
+      query = query.lte('fecha_programada', fechaHasta);
 
       const { data, error: err } = await query;
 

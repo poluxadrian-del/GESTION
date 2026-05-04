@@ -22,6 +22,7 @@ export default function ClientesPage() {
   const [gestores, setGestores] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [filterEstado, setFilterEstado] = useState<EstadoCliente | 'todos'>('todos')
+  const [filterGestor, setFilterGestor] = useState<string>('todos')
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
@@ -65,7 +66,7 @@ export default function ClientesPage() {
     }
   }, [clientes])
 
-  // Filtrar clientes por búsqueda y estado
+  // Filtrar clientes por búsqueda, estado y gestor
   const filteredClientes = clientes.filter(cliente => {
     const matchSearch = cliente.nombre_completo.toLowerCase().includes(search.toLowerCase()) ||
       cliente.numero_contrato.includes(search) ||
@@ -73,7 +74,9 @@ export default function ClientesPage() {
     
     const matchEstado = filterEstado === 'todos' || cliente.estado === filterEstado
     
-    return matchSearch && matchEstado
+    const matchGestor = filterGestor === 'todos' || cliente.gestor_id === filterGestor
+    
+    return matchSearch && matchEstado && matchGestor
   })
 
   const handleCreateCliente = async (data: any) => {
@@ -370,6 +373,19 @@ export default function ClientesPage() {
           <option value="activo">Activo</option>
           <option value="pausa">Pausa</option>
           <option value="liquidado">Liquidado</option>
+        </select>
+
+        <select
+          value={filterGestor}
+          onChange={(e) => setFilterGestor(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+        >
+          <option value="todos">Todos los gestores</option>
+          {gestores.filter(g => g.activo).map(gestor => (
+            <option key={gestor.id} value={gestor.id}>
+              {gestor.nombre}
+            </option>
+          ))}
         </select>
 
         <div className="text-sm text-gray-600 font-medium whitespace-nowrap">
