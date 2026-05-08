@@ -21,6 +21,50 @@ export const exportarExcel = (
   }));
   ws['!cols'] = colWidths;
 
+  // Aplicar formato a fechas y números
+  const columnKeys = Object.keys(datos[0]);
+  
+  for (let i = 0; i < datos.length; i++) {
+    columnKeys.forEach((columnKey, colIndex) => {
+      // Calcular dirección de celda (A2, B2, etc.) - fila 2 en adelante (1 es header)
+      const cellAddress = XLSX.utils.encode_cell({ r: i + 1, c: colIndex });
+      const cell = ws[cellAddress];
+      
+      if (cell) {
+        const originalValue = datos[i][columnKey];
+        
+        // Si es una fecha (detección en formato YYYY-MM-DD)
+        if (typeof originalValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(originalValue)) {
+          // Convertir string a número serial de Excel
+          const [year, month, day] = originalValue.split('-').map(Number);
+          const date = new Date(year, month - 1, day);
+          // Calcular número serial: días desde 30/12/1899
+          const serial = Math.floor((date.getTime() - new Date(1899, 11, 30).getTime()) / 86400000) + 1;
+          cell.v = serial;
+          cell.t = 'n';
+          cell.z = 'dd/mm/yyyy';
+        }
+        // Si es un número formateado como moneda o detectado como tal
+        else if (typeof originalValue === 'string' && originalValue.match(/^\$[\d,]+\.?\d*$/)) {
+          const numValue = parseFloat(originalValue.replace(/[$,]/g, ''));
+          cell.v = numValue;
+          cell.t = 'n';
+          cell.z = '#,##0';
+        }
+        // Si ya es un número y corresponde a moneda
+        else if (typeof originalValue === 'number' && 
+                 (columnKey.toLowerCase().includes('total') || 
+                  columnKey.toLowerCase().includes('monto') ||
+                  columnKey.toLowerCase().includes('precio') ||
+                  columnKey.toLowerCase().includes('saldo') ||
+                  columnKey.toLowerCase().includes('pagado') ||
+                  columnKey.toLowerCase().includes('venta'))) {
+          cell.z = '#,##0';
+        }
+      }
+    });
+  }
+
   // Descargar archivo
   XLSX.writeFile(wb, `${nombreArchivo}_${new Date().toISOString().split('T')[0]}.xlsx`);
 };

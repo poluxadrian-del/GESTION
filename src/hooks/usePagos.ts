@@ -327,6 +327,7 @@ export const usePagos = () => {
             id,
             nombre_completo,
             numero_contrato,
+            telefono_celular,
             gestor_id,
             total_pagado,
             estado,

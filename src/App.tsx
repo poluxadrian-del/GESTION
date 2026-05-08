@@ -8,9 +8,11 @@ import ClientesPage from './pages/ClientesPage'
 import GestoresPage from './pages/GestoresPage'
 import CobranzaPage from './pages/CobranzaPage'
 import ReportesPage from './pages/ReportesPage'
+import ReporteClientesPage from './pages/ReporteClientesPage'
 import ComisionesPage from './pages/ComisionesPage'
 import RootLayout from './components/layout/RootLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
+import ProtectedRouteByRole from './components/layout/ProtectedRouteByRole'
 
 function App() {
   const { loading, getCurrentUser } = useAuthStore()
@@ -110,6 +112,17 @@ function App() {
                   <ComisionesPage />
                 </RootLayout>
               </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/reporte-clientes"
+            element={
+              <ProtectedRouteByRole allowedRoles={['socio', 'admin']}>
+                <RootLayout>
+                  <ReporteClientesPage />
+                </RootLayout>
+              </ProtectedRouteByRole>
             }
           />
           

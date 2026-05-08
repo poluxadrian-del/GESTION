@@ -18,6 +18,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
     { path: '/gestores', label: 'Gestores', icon: UserCheck, roles: ['socio', 'admin'] },
     { path: '/cobranza', label: 'Cobranza', icon: CreditCard, roles: ['socio', 'admin', 'supervisor'] },
     { path: '/reportes', label: 'Reportes', icon: BarChart3, roles: ['socio', 'admin', 'supervisor'] },
+    { path: '/reporte-clientes', label: 'Reporte Clientes', icon: BarChart3, roles: ['socio', 'admin'] },
     { path: '/comisiones', label: 'Comisiones', icon: Percent, roles: ['socio'] },
   ]
 

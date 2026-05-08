@@ -66,7 +66,7 @@ export default function ReportesPage() {
   const descargarReporte = () => {
     if (activeTab === 'cobranza') {
       const datosFormato = reporteCobranza.map(r => ({
-        'Fecha Pago': formatDate(r.fecha_pago),
+        'Fecha Pago': r.fecha_pago,
         'Contrato': r.numero_contrato,
         'Cliente': r.cliente_nombre,
         'Estado': r.estado_cliente,
@@ -78,8 +78,8 @@ export default function ReportesPage() {
       const datosFormato = reportePagos.map(r => ({
         'Cliente': r.cliente_nombre,
         'Cuota': r.numero_pago,
-        'Fecha Programada': formatDate(r.fecha_programada),
-        'Fecha Pago': r.fecha_pago ? formatDate(r.fecha_pago) : 'N/A',
+        'Fecha Programada': r.fecha_programada,
+        'Fecha Pago': r.fecha_pago && r.fecha_pago !== '' ? r.fecha_pago : 'N/A',
         'Monto a Cobrar': formatCurrency(r.monto_programado),
         'Monto Pagado': formatCurrency(r.monto_pagado),
         'Factura': r.factura ? 'Sí' : 'No',

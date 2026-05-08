@@ -39,6 +39,7 @@ export default function PagosTable({
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr>
             <th className="px-3 py-2 text-left font-semibold text-gray-900">Cliente</th>
+            <th className="px-3 py-2 text-left font-semibold text-gray-900">Celular</th>
             <th className="px-3 py-2 text-left font-semibold text-gray-900">Cuota</th>
             <th className="px-3 py-2 text-left font-semibold text-gray-900">Fecha Programada</th>
             <th className="px-3 py-2 text-left font-semibold text-gray-900">Monto</th>
@@ -52,6 +53,9 @@ export default function PagosTable({
             <tr key={pago.id} className="hover:bg-gray-50">
               <td className="px-3 py-2 font-medium text-gray-900">
                 {(pago.cliente as any)?.nombre_completo || 'N/A'}
+              </td>
+              <td className="px-3 py-2 text-gray-600">
+                {(pago.cliente as any)?.telefono_celular || '-'}
               </td>
               <td className="px-3 py-2 text-gray-600">
                 Cuota {pago.numero_pago || 1}

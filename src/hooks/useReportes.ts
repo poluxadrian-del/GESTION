@@ -24,6 +24,22 @@ export interface ReportePagosCobrar {
   estado: string;
 }
 
+export interface ReporteClientes {
+  id: string;
+  numero_contrato: string;
+  nombre_completo: string;
+  telefono_celular: string;
+  email: string;
+  fecha_inicio: string;
+  precio_venta: number;
+  total_pagado: number;
+  saldo: number;
+  mensualidades: number;
+  vendedor: string;
+  estado: string;
+  gestor_nombre: string;
+}
+
 export const useReportes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -213,10 +229,94 @@ export const useReportes = () => {
     }
   }, []);
 
+  /**
+   * Obtener reporte de clientes con filtros por fecha de inicio y gestor
+   */
+  const obtenerReporteClientes = useCallback(async (
+    fechaDesde?: string,
+    fechaHasta?: string,
+    gestorId?: string
+  ): Promise<ReporteClientes[]> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let query = supabase
+        .from('clientes')
+        .select(`
+          id,
+          numero_contrato,
+          nombre_completo,
+          telefono_celular,
+          email,
+          fecha_inicio,
+          precio_venta,
+          total_pagado,
+          saldo,
+          mensualidades,
+          vendedor,
+          estado,
+          gestor:gestor_id (
+            id,
+            nombre
+          )
+        `)
+        .order('fecha_inicio', { ascending: false });
+
+      if (fechaDesde) {
+        query = query.gte('fecha_inicio', fechaDesde);
+      }
+
+      if (fechaHasta) {
+        query = query.lte('fecha_inicio', fechaHasta);
+      }
+
+      if (gestorId) {
+        query = query.eq('gestor_id', gestorId);
+      }
+
+      const { data, error: err } = await query;
+
+      if (err) throw err;
+
+      // Transformar a formato reporte
+      const reporte: ReporteClientes[] = (data || []).map(cliente => {
+        const gestorNormalizado = Array.isArray(cliente.gestor)
+          ? cliente.gestor[0]
+          : cliente.gestor;
+
+        return {
+          id: cliente.id,
+          numero_contrato: cliente.numero_contrato,
+          nombre_completo: cliente.nombre_completo,
+          telefono_celular: cliente.telefono_celular || '-',
+          email: cliente.email || '-',
+          fecha_inicio: cliente.fecha_inicio,
+          precio_venta: cliente.precio_venta || 0,
+          total_pagado: cliente.total_pagado || 0,
+          saldo: cliente.saldo || 0,
+          mensualidades: cliente.mensualidades || 0,
+          vendedor: cliente.vendedor || '-',
+          estado: cliente.estado,
+          gestor_nombre: gestorNormalizado?.nombre || '-',
+        };
+      });
+
+      return reporte;
+    } catch (err) {
+      const message = handleSupabaseError(err);
+      setError(message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     error,
     obtenerReporteCobranza,
     obtenerReportePagosCobrar,
+    obtenerReporteClientes,
   };
 };

@@ -33,7 +33,7 @@ export const useComisiones = () => {
     setError(null);
 
     try {
-      // Obtener todos los clientes activos sin comisión
+      // Obtener todos los clientes sin comisión (independientemente del estado)
       const { data: clientes, error: errClientes } = await supabase
         .from('clientes')
         .select(`
@@ -49,7 +49,6 @@ export const useComisiones = () => {
             nombre
           )
         `)
-        .eq('estado', 'activo')
         .eq('comision', false)
         .order('nombre_completo', { ascending: true });
 
