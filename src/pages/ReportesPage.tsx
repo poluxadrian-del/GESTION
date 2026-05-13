@@ -69,9 +69,11 @@ export default function ReportesPage() {
         'Fecha Pago': r.fecha_pago,
         'Contrato': r.numero_contrato,
         'Cliente': r.cliente_nombre,
+        'Email': r.email,
         'Estado': r.estado_cliente,
         'Gestor': r.gestor_nombre,
         'Monto Pagado': formatCurrency(r.monto_pagado),
+        'Total Pagado': formatCurrency(r.total_pagado),
       }));
       exportarExcel(datosFormato, 'Reporte_Cobranza', 'Cobranza');
     } else {
@@ -281,21 +283,23 @@ export default function ReportesPage() {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Fecha Pago</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Contrato</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Cliente</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Email</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Estado</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Gestor</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Monto Pagado</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Total Pagado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={8} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Cargando...
                     </td>
                   </tr>
                 ) : reporteCobranza.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={8} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Presiona "Cargar" para ver los datos
                     </td>
                   </tr>
@@ -305,6 +309,7 @@ export default function ReportesPage() {
                       <td className="px-3 py-2 text-xs text-gray-900">{formatDate(r.fecha_pago)}</td>
                       <td className="px-3 py-2 text-xs text-gray-600">{r.numero_contrato}</td>
                       <td className="px-3 py-2 text-xs font-medium text-gray-900">{r.cliente_nombre}</td>
+                      <td className="px-3 py-2 text-xs text-gray-600">{r.email}</td>
                       <td className="px-3 py-2 text-xs">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           r.estado_cliente === 'activo'
@@ -321,6 +326,9 @@ export default function ReportesPage() {
                       <td className="px-3 py-2 text-xs text-gray-600">{r.gestor_nombre}</td>
                       <td className="px-3 py-2 text-xs text-right font-semibold text-gray-900">
                         {formatCurrency(r.monto_pagado)}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-right font-semibold text-gray-900">
+                        {formatCurrency(r.total_pagado)}
                       </td>
                     </tr>
                   ))

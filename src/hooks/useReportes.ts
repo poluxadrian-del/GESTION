@@ -10,6 +10,8 @@ export interface ReporteCobranza {
   numero_pago: number;
   numero_contrato: string;
   estado_cliente: string;
+  email: string;
+  total_pagado: number;
 }
 
 export interface ReportePagosCobrar {
@@ -63,7 +65,7 @@ export const useReportes = () => {
       while (hasMore) {
         let query = supabase
           .from('pagos_realizados')
-          .select('fecha_pago, monto_pagado, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, numero_contrato, factura, estado), gestor:gestor_id(nombre)')
+          .select('fecha_pago, monto_pagado, cliente_id, gestor_id, cliente:cliente_id(nombre_completo, numero_contrato, factura, estado, email, total_pagado), gestor:gestor_id(nombre)')
           .not('fecha_pago', 'is', null)
           .order('fecha_pago', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
@@ -119,6 +121,8 @@ export const useReportes = () => {
         monto_pagado: p.monto_pagado || 0,
         numero_contrato: (p.cliente as any)?.numero_contrato || '',
         estado_cliente: (p.cliente as any)?.estado || '',
+        email: (p.cliente as any)?.email || '',
+        total_pagado: (p.cliente as any)?.total_pagado || 0,
       }));
 
       return reporte;
