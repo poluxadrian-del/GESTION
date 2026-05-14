@@ -84,9 +84,9 @@ export default function ReportesPage() {
         'Fecha Pago': r.fecha_pago && r.fecha_pago !== '' ? r.fecha_pago : 'N/A',
         'Monto a Cobrar': formatCurrency(r.monto_programado),
         'Monto Pagado': formatCurrency(r.monto_pagado),
-        'Factura': r.factura ? 'Sí' : 'No',
+        'Teléfono': r.telefono_celular,
+        'Email': r.email,
         'Gestor': r.gestor_nombre,
-        'Estado': r.estado,
       }));
       exportarExcel(datosFormato, 'Reporte_Pagos_Cobrar', 'Pagos por Cobrar');
     }
@@ -350,9 +350,9 @@ export default function ReportesPage() {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Fecha Pago Real</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Monto a Cobrar</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Monto Pagado</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-900">Factura</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Teléfono</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Email</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Gestor</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -383,21 +383,9 @@ export default function ReportesPage() {
                       <td className="px-3 py-2 text-xs text-right font-semibold text-green-700">
                         {formatCurrency(r.monto_pagado)}
                       </td>
-                      <td className="px-3 py-2 text-xs text-center">
-                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                          r.factura
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {r.factura ? 'Sí' : 'No'}
-                        </span>
-                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-600">{r.telefono_celular}</td>
+                      <td className="px-3 py-2 text-xs text-gray-600">{r.email}</td>
                       <td className="px-3 py-2 text-xs text-gray-600">{r.gestor_nombre}</td>
-                      <td className="px-3 py-2 text-xs">
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                          {r.estado}
-                        </span>
-                      </td>
                     </tr>
                   ))
                 )}
