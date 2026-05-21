@@ -23,6 +23,7 @@ export default function ClientesPage() {
   const [search, setSearch] = useState('')
   const [filterEstado, setFilterEstado] = useState<EstadoCliente | 'todos'>('todos')
   const [filterGestor, setFilterGestor] = useState<string>('todos')
+  const [filterDiaPago, setFilterDiaPago] = useState<string>('todos')
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
@@ -66,7 +67,7 @@ export default function ClientesPage() {
     }
   }, [clientes])
 
-  // Filtrar clientes por búsqueda, estado y gestor
+  // Filtrar clientes por búsqueda, estado, gestor y día de pago
   const filteredClientes = clientes.filter(cliente => {
     const matchSearch = cliente.nombre_completo.toLowerCase().includes(search.toLowerCase()) ||
       cliente.numero_contrato.includes(search) ||
@@ -76,8 +77,13 @@ export default function ClientesPage() {
     
     const matchGestor = filterGestor === 'todos' || cliente.gestor_id === filterGestor
     
-    return matchSearch && matchEstado && matchGestor
+    const matchDiaPago = filterDiaPago === 'todos' || cliente.dia_pago.toString() === filterDiaPago
+    
+    return matchSearch && matchEstado && matchGestor && matchDiaPago
   })
+
+  // Obtener días de pago únicos para mostrar en el filtro
+  const diasPagoUnicos = Array.from(new Set(clientes.map(c => c.dia_pago))).sort((a, b) => a - b)
 
   const handleCreateCliente = async (data: any) => {
     try {
@@ -384,6 +390,19 @@ export default function ClientesPage() {
           {gestores.filter(g => g.activo).map(gestor => (
             <option key={gestor.id} value={gestor.id}>
               {gestor.nombre}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={filterDiaPago}
+          onChange={(e) => setFilterDiaPago(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+        >
+          <option value="todos">Todos los días</option>
+          {diasPagoUnicos.map(dia => (
+            <option key={dia} value={dia.toString()}>
+              Día {dia}
             </option>
           ))}
         </select>

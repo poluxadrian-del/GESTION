@@ -2,12 +2,17 @@ import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePagos } from '@/hooks/usePagos'
 import { useGestores } from '@/hooks/useGestores'
+import { useClientes } from '@/hooks/useClientes'
 import { useAuthStore } from '@/store/authStore'
 import type { Pago } from '@/types'
 import PagosTable from '@/components/cobranza/PagosTable'
 import CarteraVencida from '@/components/cobranza/CarteraVencida'
 import ModalRegistrarPago from '@/components/cobranza/ModalRegistrarPago'
 import ModalRegistrarSeguimiento from '@/components/cobranza/ModalRegistrarSeguimiento'
+import ClienteDetail from '@/components/clientes/ClienteDetail'
+import CalendarioPagos from '@/components/clientes/CalendarioPagos'
+import HistorialSeguimientos from '@/components/clientes/HistorialSeguimientos'
+import Modal from '@/components/shared/Modal'
 import toast from 'react-hot-toast'
 
 interface Gestor {
@@ -19,14 +24,20 @@ interface Gestor {
 export default function CobranzaPage() {
   const { obtenerPagosPendientes, obtenerCarteraVencida } = usePagos()
   const { obtenerGestores } = useGestores()
+  const { obtenerClientes } = useClientes()
   const { usuario } = useAuthStore()
   const [selectedTab, setSelectedTab] = useState<'pendientes' | 'vencidos'>('pendientes')
   const [pagosPendientes, setPagosPendientes] = useState<Pago[]>([])
   const [pagosVencidos, setPagosVencidos] = useState<Pago[]>([])
   const [gestores, setGestores] = useState<Gestor[]>([])
+  const [clientes, setClientes] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null)
   const [selectedPagoSeguimiento, setSelectedPagoSeguimiento] = useState<Pago | null>(null)
+  const [selectedCliente, setSelectedCliente] = useState<any>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [showHistorialModal, setShowHistorialModal] = useState(false)
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
   
   // Determinar permisos basados en rol
   const canRegisterPayments = usuario?.rol !== 'supervisor'
@@ -53,13 +64,17 @@ export default function CobranzaPage() {
     loadData()
   }, [currentPage, filterCliente, filterFechaDesde, filterFechaHasta, filterGestor, currentPageCartera, filterGestorCartera, selectedTab])
 
-  // Cargar gestores al montar el componente
+  // Cargar gestores y clientes al montar el componente
   useEffect(() => {
-    const loadGestores = async () => {
-      const gestoresData = await obtenerGestores(true)
+    const init = async () => {
+      const [gestoresData, clientesData] = await Promise.all([
+        obtenerGestores(true),
+        obtenerClientes()
+      ])
       setGestores(gestoresData)
+      setClientes(clientesData)
     }
-    loadGestores()
+    init()
   }, [])
 
   // Resetear a página 1 cuando cambian los filtros
@@ -90,6 +105,7 @@ export default function CobranzaPage() {
       // Mapear datos de calendarios_pagos a estructura compatible con PagosTable
       const pagosMapeados = pendientesResult.data.map((p: any) => ({
         ...p,
+        cliente_id: p.clientes?.id || p.cliente_id,  // Usar el id del cliente relacionado
         cliente: p.clientes,  // Convertir clientes → cliente
         numero_pago: p.numero_cuota,  // Convertir numero_cuota → numero_pago
       }))
@@ -251,6 +267,26 @@ export default function CobranzaPage() {
               <PagosTable
                 pagos={pagosPendientes}
                 loading={loading}
+                onSelectCliente={(clienteId) => {
+                  const clienteCompleto = clientes.find(c => c.id === clienteId)
+                  if (clienteCompleto) {
+                    setSelectedCliente(clienteCompleto)
+                    setShowDetailModal(true)
+                  } else {
+                    console.warn(`Cliente no encontrado: ${clienteId}`)
+                    console.warn('Clientes disponibles:', clientes.map(c => c.id))
+                    toast.error('No se pudo cargar la información del cliente. Intenta nuevamente.')
+                  }
+                }}
+                onSelectCalendario={(clienteId) => {
+                  const clienteCompleto = clientes.find(c => c.id === clienteId)
+                  if (clienteCompleto) {
+                    setSelectedCliente(clienteCompleto)
+                    setShowCalendarModal(true)
+                  } else {
+                    toast.error('No se pudo cargar el calendario del cliente.')
+                  }
+                }}
                 onSelectPago={handleSelectPago}
                 onSelectSeguimiento={handleSelectPagoSeguimiento}
                 canRegister={canRegisterPayments}
@@ -258,9 +294,12 @@ export default function CobranzaPage() {
 
               {/* Paginación */}
               <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Mostrando {pagosPendientes.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} a{' '}
-                  {Math.min(currentPage * pageSize, totalPagos)} de {totalPagos} registros
+                <div className="text-sm text-gray-600 font-medium">
+                  {(() => {
+                    // Contar clientes únicos
+                    const clientesUnicos = new Set(pagosPendientes.map(p => p.cliente_id)).size
+                    return `${clientesUnicos} cliente${clientesUnicos !== 1 ? 's' : ''} con ${pagosPendientes.length} pago${pagosPendientes.length !== 1 ? 's' : ''} pendiente${pagosPendientes.length !== 1 ? 's' : ''}`
+                  })()}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -376,6 +415,59 @@ export default function CobranzaPage() {
           onSuccess={handleSeguimientoRegistered}
         />
       )}
+
+      {/* Modal Detalle Cliente */}
+      <Modal
+        isOpen={showDetailModal}
+        title="Detalle del Cliente"
+        onClose={() => {
+          setShowDetailModal(false)
+          setSelectedCliente(null)
+        }}
+        size="lg"
+      >
+        {selectedCliente && (
+          <ClienteDetail
+            key={selectedCliente.id}
+            cliente={selectedCliente}
+            onShowHistorial={() => {
+              setShowDetailModal(false)
+              setShowHistorialModal(true)
+            }}
+          />
+        )}
+      </Modal>
+
+      {/* Modal Historial de Seguimientos */}
+      {showHistorialModal && selectedCliente && (
+        <HistorialSeguimientos
+          clienteId={selectedCliente.id}
+          clienteNombre={selectedCliente.nombre_completo}
+          onClose={() => {
+            setShowHistorialModal(false)
+            setShowDetailModal(true)
+          }}
+        />
+      )}
+
+      {/* Modal Calendario de Pagos */}
+      <Modal
+        isOpen={showCalendarModal}
+        title={`Calendario de Pagos - ${selectedCliente?.nombre_completo}`}
+        onClose={() => {
+          setShowCalendarModal(false)
+          setSelectedCliente(null)
+        }}
+        size="xl"
+      >
+        {selectedCliente && (
+          <CalendarioPagos 
+            clienteId={selectedCliente.id} 
+            cliente={selectedCliente}
+            onPagoRegistrado={loadData}
+          />
+        )}
+      </Modal>
     </div>
   )
 }
