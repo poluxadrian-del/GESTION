@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Clock, Plus, ChevronDown, ChevronRight, Eye, Calendar, MessageSquare } from 'lucide-react'
+import { Clock, ChevronDown, ChevronRight, Eye, Calendar, MessageSquare } from 'lucide-react'
 import type { Pago } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 

@@ -44,7 +44,6 @@ export default function CobranzaPage() {
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPagos, setTotalPagos] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const pageSize = 50
 
@@ -111,7 +110,6 @@ export default function CobranzaPage() {
       }))
 
       setPagosPendientes(pagosMapeados)
-      setTotalPagos(pendientesResult.total)
       setTotalPages(pendientesResult.totalPages)
       setPagosVencidos(carteraResult.data)
       setTotalPagosCartera(carteraResult.total)
