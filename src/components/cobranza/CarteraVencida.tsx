@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react'
 import type { Pago } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 import { useState } from 'react'
@@ -107,15 +107,16 @@ export default function CarteraVencida({ pagos, loading, onSelectPago }: Cartera
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        // Seleccionar la cuota más vencida para cobrar
+                        // Seleccionar la cuota más vencida para seguimiento
                         const cuotaMasVencida = item.cuotasVencidas.reduce((prev: any, curr: any) => 
                           new Date(curr.fecha_programada) < new Date(prev.fecha_programada) ? curr : prev
                         );
                         onSelectPago(cuotaMasVencida)
                       }}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
+                      className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
                     >
-                      Cobrar Ahora
+                      <MessageSquare size={14} />
+                      Seguimiento
                     </button>
                   </div>
                   <button
@@ -152,9 +153,10 @@ export default function CarteraVencida({ pagos, loading, onSelectPago }: Cartera
                         </div>
                         <button
                           onClick={() => onSelectPago(cuota)}
-                          className="ml-3 px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium flex-shrink-0 whitespace-nowrap"
+                          className="ml-3 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium flex-shrink-0 whitespace-nowrap flex items-center gap-1"
                         >
-                          Cobrar
+                          <MessageSquare size={12} />
+                          Seguimiento
                         </button>
                       </div>
                     );

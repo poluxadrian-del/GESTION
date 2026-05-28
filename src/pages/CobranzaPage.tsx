@@ -144,6 +144,16 @@ export default function CobranzaPage() {
     setSelectedPagoSeguimiento(pago)
   }
 
+  const handleSelectSeguimientoCartera = (pago: any) => {
+    const clienteCompleto = clientes.find(c => c.id === pago.cliente_id)
+    if (clienteCompleto) {
+      setSelectedCliente(clienteCompleto)
+      setShowHistorialModal(true)
+    } else {
+      toast.error('No se pudo cargar la información del cliente')
+    }
+  }
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1)
@@ -361,7 +371,7 @@ export default function CobranzaPage() {
               <CarteraVencida
                 pagos={pagosVencidos}
                 loading={loading}
-                onSelectPago={setSelectedPago}
+                onSelectPago={handleSelectSeguimientoCartera}
               />
 
               {/* Paginación Cartera Vencida */}

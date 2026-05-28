@@ -74,6 +74,7 @@ export default function ReportesPage() {
         'Gestor': r.gestor_nombre,
         'Monto Pagado': formatCurrency(r.monto_pagado),
         'Total Pagado': formatCurrency(r.total_pagado),
+        'Notas': r.notas,
       }));
       exportarExcel(datosFormato, 'Reporte_Cobranza', 'Cobranza');
     } else {
@@ -288,18 +289,19 @@ export default function ReportesPage() {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Gestor</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Monto Pagado</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-900">Total Pagado</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Notas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={9} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Cargando...
                     </td>
                   </tr>
                 ) : reporteCobranza.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={9} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Presiona "Cargar" para ver los datos
                     </td>
                   </tr>
@@ -329,6 +331,9 @@ export default function ReportesPage() {
                       </td>
                       <td className="px-3 py-2 text-xs text-right font-semibold text-gray-900">
                         {formatCurrency(r.total_pagado)}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-600 max-w-xs truncate" title={r.notas}>
+                        {r.notas || '-'}
                       </td>
                     </tr>
                   ))
