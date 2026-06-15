@@ -66,7 +66,7 @@ export default function ClienteForm({
       fecha_primer_pago: cliente.fecha_primer_pago || '',
       vendedor: cliente.vendedor || '',
       factura: cliente.factura,
-      comision: false,
+      comision: cliente.comision,
       notas: cliente.notas || '',
       monto_pago: cliente.monto_pago || 0,
     } : undefined,
@@ -115,7 +115,7 @@ export default function ClienteForm({
         fecha_primer_pago: cliente.fecha_primer_pago || '',
         vendedor: cliente.vendedor || '',
         factura: cliente.factura,
-        comision: false,
+        comision: cliente.comision,
         notas: cliente.notas || '',
         monto_pago: cliente.monto_pago || 0,
       })
