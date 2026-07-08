@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 
 export interface ClienteActualizacionExcelRow {
-  numero_contrato?: string;
+  numero_contrato: string;
   nuevo_contrato?: string;
   cargo?: string;
 }

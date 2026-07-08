@@ -241,6 +241,14 @@ export default function ClientesPage() {
     try {
       const resultado = await actualizarClientesMasivo(actualizacionesAplicar)
       
+      // Mostrar resumen de actualización
+      if (resultado.exitosos > 0) {
+        toast.success(`${resultado.exitosos} cliente(s) actualizado(s) correctamente`)
+      }
+      if (resultado.errores > 0) {
+        toast.error(`${resultado.errores} cliente(s) con error`)
+      }
+      
       // Recargar clientes para mostrar cambios
       const data = await obtenerClientes()
       setClientes(data)
