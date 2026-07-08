@@ -10,6 +10,7 @@ export interface ClienteExcelRow {
   telefono_empresa?: string;
   ref_nombre?: string;
   ref_telefono?: string;
+  cargo?: string;
   fecha_inicio?: string;
   precio_venta?: number;
   descuento?: number;
@@ -111,6 +112,7 @@ export const importarClientesExcel = (file: File): Promise<ClienteExcelRow[]> =>
           telefono_empresa: String(row.telefono_empresa || '').trim() || undefined,
           ref_nombre: String(row.ref_nombre || '').trim() || undefined,
           ref_telefono: String(row.ref_telefono || '').trim() || undefined,
+          cargo: String(row.cargo || '').trim() || undefined,
           fecha_inicio: convertirFechaExcel(row.fecha_inicio),
           precio_venta: Number(row.precio_venta) || 0,
           descuento: Number(row.descuento) || 0,

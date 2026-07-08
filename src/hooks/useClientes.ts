@@ -98,7 +98,7 @@ export const useClientes = () => {
           consecutivo = ultimoNum + 1;
         }
         
-        numero_contrato = `CLI-${año}-${String(consecutivo).padStart(4, '0')}`;
+        numero_contrato = `CLI-${año}-${String(consecutivo).padStart(5, '0')}`;
       }
 
       // Solo insertar campos que existen en la tabla clientes (sin _diaPago2Temporal)
@@ -329,11 +329,88 @@ export const useClientes = () => {
     }
   }, []);
 
+  const actualizarClientesMasivo = useCallback(async (actualizaciones: Array<{ numero_contrato: string; nuevo_contrato?: string; cargo?: string }>) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let exitosos = 0;
+      let errores = 0;
+      const erroresDetalle: string[] = [];
+
+      for (const actualizacion of actualizaciones) {
+        try {
+          // Obtener el cliente por numero_contrato
+          const { data: cliente, error: obtenerError } = await supabase
+            .from('clientes')
+            .select('id')
+            .eq('numero_contrato', actualizacion.numero_contrato)
+            .single();
+
+          if (obtenerError || !cliente) {
+            errores++;
+            erroresDetalle.push(`${actualizacion.numero_contrato}: Cliente no encontrado`);
+            continue;
+          }
+
+          // Preparar los datos a actualizar
+          const actualizarData: any = {};
+          
+          if (actualizacion.nuevo_contrato) {
+            actualizarData.numero_contrato = actualizacion.nuevo_contrato;
+          }
+          
+          if (actualizacion.cargo) {
+            actualizarData.cargo = actualizacion.cargo;
+          }
+
+          // Actualizar el cliente
+          const { error: actualizarError } = await supabase
+            .from('clientes')
+            .update(actualizarData)
+            .eq('id', cliente.id);
+
+          if (actualizarError) {
+            errores++;
+            erroresDetalle.push(`${actualizacion.numero_contrato}: ${actualizarError.message}`);
+            continue;
+          }
+
+          exitosos++;
+        } catch (error) {
+          errores++;
+          erroresDetalle.push(`${actualizacion.numero_contrato}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
+      }
+
+      // Mostrar resultado
+      if (exitosos > 0) {
+        toast.success(`${exitosos} cliente(s) actualizado(s)`);
+      }
+      
+      if (errores > 0) {
+        console.error('Errores en actualización masiva:', erroresDetalle);
+        toast.error(`${errores} cliente(s) no pudieron actualizarse`);
+      }
+
+      return { exitosos, errores, erroresDetalle };
+    } catch (err) {
+      console.error('Error en actualizarClientesMasivo:', err);
+      const message = handleSupabaseError(err);
+      setError(message);
+      toast.error(message);
+      return { exitosos: 0, errores: actualizaciones.length, erroresDetalle: [message] };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     obtenerClientes,
     obtenerClientePorId,
     crearCliente,
     actualizarCliente,
+    actualizarClientesMasivo,
     eliminarCliente,
     generarCalendarioPagosCliente,
     loading,

@@ -38,6 +38,7 @@ export interface Cliente {
   telefono_empresa?: string;
   ref_nombre?: string;
   ref_telefono?: string;
+  cargo?: string;
   // Datos del contrato
   fecha_inicio: string;
   precio_venta: number;

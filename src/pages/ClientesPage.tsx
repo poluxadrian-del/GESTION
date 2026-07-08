@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Search, Download } from 'lucide-react'
+import { Plus, Search, Download, Upload } from 'lucide-react'
 import { useClientes } from '@/hooks/useClientes'
 import { useGestores } from '@/hooks/useGestores'
 import { useAuthStore } from '@/store/authStore'
@@ -11,11 +11,13 @@ import CalendarioPagos from '@/components/clientes/CalendarioPagos'
 import HistorialSeguimientos from '@/components/clientes/HistorialSeguimientos'
 import Modal from '@/components/shared/Modal'
 import ModalImportarClientes from '@/components/clientes/ModalImportarClientes'
+import ModalActualizarClientesExcel from '@/components/clientes/ModalActualizarClientesExcel'
 import { importarClientesExcel, validarClientesExcel, type ClienteExcelRow } from '@/utils/importExcel'
+import { importarActualizacionesExcel, validarActualizacionesExcel, type ClienteActualizacionExcelRow } from '@/utils/importExcelActualizaciones'
 import toast from 'react-hot-toast'
 
 export default function ClientesPage() {
-  const { obtenerClientes, crearCliente, actualizarCliente, generarCalendarioPagosCliente, loading } = useClientes()
+  const { obtenerClientes, crearCliente, actualizarCliente, actualizarClientesMasivo, generarCalendarioPagosCliente, loading } = useClientes()
   const { obtenerGestores } = useGestores()
   const { usuario } = useAuthStore()
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -29,16 +31,21 @@ export default function ClientesPage() {
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [showHistorialModal, setShowHistorialModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showActualizarModal, setShowActualizarModal] = useState(false)
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null)
   const [generandoCalendario, setGenerandoCalendario] = useState(false)
   const [clientesValidos, setClientesValidos] = useState<ClienteExcelRow[]>([])
   const [erroresValidacion, setErroresValidacion] = useState<{ fila: number; error: string }[]>([])
+  const [actualizacionesValidas, setActualizacionesValidas] = useState<ClienteActualizacionExcelRow[]>([])
+  const [erroresActualizacion, setErroresActualizacion] = useState<{ fila: number; error: string }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputActualizarRef = useRef<HTMLInputElement>(null)
 
   // Determinar permisos basados en rol
   const canEditClientes = usuario?.rol !== 'supervisor'
   const canImportClientes = usuario?.rol !== 'supervisor'
+  const canUpdateClientes = usuario?.rol === 'socio'  // Solo socios pueden actualizar masivo
 
   // Cargar clientes al montar
   useEffect(() => {
@@ -175,12 +182,76 @@ export default function ClientesPage() {
     }
   }
 
+  const handleActualizarExcel = () => {
+    if (!canUpdateClientes) {
+      toast.error('Solo socios pueden actualizar clientes')
+      return
+    }
+    fileInputActualizarRef.current?.click()
+  }
+
   const handleImportarExcel = () => {
     if (!canImportClientes) {
       toast.error('No tienes permisos para importar clientes')
       return
     }
     fileInputRef.current?.click()
+  }
+
+  const handleFileActualizarSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUpdateClientes) {
+      toast.error('Solo socios pueden actualizar clientes')
+      return
+    }
+    
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      toast.loading('Leyendo archivo...')
+      const actualizacionesExcel = await importarActualizacionesExcel(file)
+      const { validas, errores } = validarActualizacionesExcel(actualizacionesExcel)
+
+      setActualizacionesValidas(validas)
+      setErroresActualizacion(errores)
+      setShowActualizarModal(true)
+      toast.dismiss()
+
+      if (errores.length > 0) {
+        toast.error(`Se encontraron ${errores.length} error(es) en el archivo`)
+      }
+    } catch (error) {
+      toast.dismiss()
+      toast.error(error instanceof Error ? error.message : 'Error al procesar el archivo')
+      console.error(error)
+    }
+
+    // Limpiar el input
+    if (fileInputActualizarRef.current) {
+      fileInputActualizarRef.current.value = ''
+    }
+  }
+
+  const handleActualizarClientes = async (actualizacionesAplicar: ClienteActualizacionExcelRow[]) => {
+    if (!canUpdateClientes) {
+      toast.error('Solo socios pueden actualizar clientes')
+      return
+    }
+
+    try {
+      const resultado = await actualizarClientesMasivo(actualizacionesAplicar)
+      
+      // Recargar clientes para mostrar cambios
+      const data = await obtenerClientes()
+      setClientes(data)
+
+      setShowActualizarModal(false)
+      setActualizacionesValidas([])
+      setErroresActualizacion([])
+    } catch (error) {
+      console.error('Error al actualizar clientes:', error)
+      toast.error('Error al actualizar clientes')
+    }
   }
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,6 +337,7 @@ export default function ClientesPage() {
             telefono_empresa: clienteExcel.telefono_empresa,
             ref_nombre: clienteExcel.ref_nombre,
             ref_telefono: clienteExcel.ref_telefono,
+            cargo: clienteExcel.cargo,
             gestor_id: gestorId,
             fecha_inicio: clienteExcel.fecha_inicio || new Date().toISOString().split('T')[0],
             precio_venta: precioVenta,
@@ -327,6 +399,26 @@ export default function ClientesPage() {
             onChange={handleFileSelected}
             className="hidden"
           />
+          <input
+            ref={fileInputActualizarRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleFileActualizarSelected}
+            className="hidden"
+          />
+          <button
+            onClick={handleActualizarExcel}
+            disabled={!canUpdateClientes}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              canUpdateClientes
+                ? 'bg-orange-600 text-white hover:bg-orange-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={!canUpdateClientes ? 'Solo socios pueden actualizar clientes' : 'Actualizar contrato y cargo'}
+          >
+            <Upload size={18} />
+            Actualizar Excel
+          </button>
           <button
             onClick={handleImportarExcel}
             disabled={!canImportClientes}
@@ -506,6 +598,19 @@ export default function ClientesPage() {
           setShowImportModal(false)
           setClientesValidos([])
           setErroresValidacion([])
+        }}
+      />
+
+      {/* Modal Actualizar Clientes */}
+      <ModalActualizarClientesExcel
+        isOpen={showActualizarModal}
+        actualizacionesValidas={actualizacionesValidas}
+        erroresValidacion={erroresActualizacion}
+        onActualizar={handleActualizarClientes}
+        onCancel={() => {
+          setShowActualizarModal(false)
+          setActualizacionesValidas([])
+          setErroresActualizacion([])
         }}
       />
     </div>

@@ -28,6 +28,10 @@ export const clienteFormSchema = z.object({
     .default('')
     .optional()
     .nullable(),
+  cargo: z.string()
+    .default('')
+    .optional()
+    .nullable(),
   gestor_id: z.string()
     .uuid('Gestor inválido'),
   fecha_inicio: z.string()

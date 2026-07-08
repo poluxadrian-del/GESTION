@@ -25,6 +25,7 @@ export interface ReportePagosCobrar {
   telefono_celular: string;
   email: string;
   gestor_nombre: string;
+  cargo: string;
 }
 
 export interface ReporteClientes {
@@ -155,7 +156,7 @@ export const useReportes = () => {
       while (hasMore) {
         let query = supabase
           .from('calendarios_pagos')
-          .select('numero_cuota, fecha_programada, monto_programado, saldo_pendiente, estado, cliente_id, cliente:cliente_id(nombre_completo, factura, estado, telefono_celular, email, gestor_id, gestor:gestor_id(nombre))')
+          .select('numero_cuota, fecha_programada, monto_programado, saldo_pendiente, estado, cliente_id, cliente:cliente_id(nombre_completo, factura, estado, telefono_celular, email, cargo, gestor_id, gestor:gestor_id(nombre))')
           .order('fecha_programada', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -223,6 +224,7 @@ export const useReportes = () => {
         telefono_celular: (p.cliente as any)?.telefono_celular || '-',
         email: (p.cliente as any)?.email || '-',
         gestor_nombre: (p.cliente as any)?.gestor?.nombre || '-',
+        cargo: (p.cliente as any)?.cargo || '-',
       }));
 
       return reporte;

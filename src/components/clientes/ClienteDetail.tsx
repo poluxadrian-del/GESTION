@@ -154,6 +154,10 @@ export default function ClienteDetail({ cliente, onShowHistorial }: ClienteDetai
             <p className="font-medium text-gray-900">{cliente.vendedor || 'N/A'}</p>
           </div>
           <div>
+            <p className="text-xs text-gray-600">Cargo</p>
+            <p className="font-medium text-gray-900">{cliente.cargo || 'N/A'}</p>
+          </div>
+          <div>
             <p className="text-xs text-gray-600">Factura</p>
             <p className={`font-medium ${cliente.factura ? 'text-green-600' : 'text-red-600'}`}>
               {cliente.factura ? 'Sí' : 'No'}

@@ -80,6 +80,7 @@ export default function ReportesPage() {
     } else {
       const datosFormato = reportePagos.map(r => ({
         'Cliente': r.cliente_nombre,
+        'Cargo': r.cargo,
         'Cuota': r.numero_pago,
         'Fecha Programada': r.fecha_programada,
         'Fecha Pago': r.fecha_pago && r.fecha_pago !== '' ? r.fecha_pago : 'N/A',
@@ -350,6 +351,7 @@ export default function ReportesPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Cliente</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Cargo</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-900">Cuota</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Fecha Programada</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-900">Fecha Pago Real</th>
@@ -363,13 +365,13 @@ export default function ReportesPage() {
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={10} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Cargando...
                     </td>
                   </tr>
                 ) : reportePagos.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-3 py-2 text-center text-gray-600 text-xs">
+                    <td colSpan={10} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Presiona "Cargar" para ver los datos
                     </td>
                   </tr>
@@ -377,6 +379,7 @@ export default function ReportesPage() {
                   reportePagos.map((r, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-xs font-medium text-gray-900">{r.cliente_nombre}</td>
+                      <td className="px-3 py-2 text-xs text-gray-600">{r.cargo}</td>
                       <td className="px-3 py-2 text-xs text-center text-gray-600">{r.numero_pago}</td>
                       <td className="px-3 py-2 text-xs text-gray-900">{formatDate(r.fecha_programada)}</td>
                       <td className="px-3 py-2 text-xs text-gray-600">

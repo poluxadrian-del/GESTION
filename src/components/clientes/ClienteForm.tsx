@@ -55,6 +55,7 @@ export default function ClienteForm({
       telefono_empresa: cliente.telefono_empresa || '',
       ref_nombre: cliente.ref_nombre || '',
       ref_telefono: cliente.ref_telefono || '',
+      cargo: cliente.cargo || '',
       gestor_id: cliente.gestor_id,
       fecha_inicio: cliente.fecha_inicio,
       precio_venta: cliente.precio_venta,
@@ -104,6 +105,7 @@ export default function ClienteForm({
         telefono_empresa: cliente.telefono_empresa || '',
         ref_nombre: cliente.ref_nombre || '',
         ref_telefono: cliente.ref_telefono || '',
+        cargo: cliente.cargo || '',
         gestor_id: cliente.gestor_id,
         fecha_inicio: cliente.fecha_inicio,
         precio_venta: cliente.precio_venta,
@@ -141,6 +143,7 @@ export default function ClienteForm({
         telefono_empresa: data.telefono_empresa || null,
         ref_nombre: data.ref_nombre || null,
         ref_telefono: data.ref_telefono || null,
+        cargo: data.cargo || null,
         fecha_primer_pago: data.fecha_primer_pago || null,
         vendedor: data.vendedor || null,
         notas: data.notas || null,
@@ -184,6 +187,7 @@ export default function ClienteForm({
           telefono_empresa: data.telefono_empresa || null,
           ref_nombre: data.ref_nombre || null,
           ref_telefono: data.ref_telefono || null,
+          cargo: data.cargo || null,
           fecha_primer_pago: data.fecha_primer_pago || null,
           vendedor: data.vendedor || null,
           notas: data.notas || null,
@@ -310,6 +314,12 @@ export default function ClienteForm({
             <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono Referencia</label>
             <input {...register('ref_telefono')} type="tel" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" placeholder="+57 3001234567" />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Cargo</label>
+          <input {...register('cargo')} type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" placeholder="Ej: Gerente, Contador, etc." />
+          {renderFieldError('cargo')}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
