@@ -44,8 +44,8 @@ export default function ModalReestructurarCalendario({
     }
   }, [canReestructurar, onClose])
 
-  // Filtrar solo cuotas pendientes
-  const cuotasPendientes = calendarios.filter((c) => c.estado === 'pendiente')
+  // Filtrar cuotas pendientes y parcialmente pagadas
+  const cuotasPendientes = calendarios.filter((c) => c.estado === 'pendiente' || c.estado === 'parcialmente_pagado')
 
   const calcularFechas = (fechaInicial: string) => {
     if (!fechaInicial) {
@@ -122,7 +122,7 @@ export default function ModalReestructurarCalendario({
 
         {cuotasPendientes.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No hay cuotas pendientes para reestructurar</p>
+            <p>No hay cuotas pendientes o con pago parcial para reestructurar</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,7 +139,7 @@ export default function ModalReestructurarCalendario({
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Las demás cuotas se calcularán sumando 1 mes automáticamente
+                Se pueden reestructurar cuotas pendientes y parcialmente pagadas
               </p>
             </div>
 

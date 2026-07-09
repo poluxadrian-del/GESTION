@@ -19,6 +19,7 @@ export default function ReportesPage() {
   const [estadoPagoFilter, setEstadoPagoFilter] = useState('');
   const [facturaFilter, setFacturaFilter] = useState('');
   const [estadoClienteFilter, setEstadoClienteFilter] = useState('');
+  const [excluirCondonar, setExcluirCondonar] = useState(true);
 
   const { loading, obtenerReporteCobranza, obtenerReportePagosCobrar } = useReportes();
   const { obtenerGestores } = useGestores();
@@ -35,21 +36,29 @@ export default function ReportesPage() {
   // Cargar reporte cuando cambian filtros o tab
   const loadReportes = async () => {
     if (activeTab === 'cobranza') {
-      const data = await obtenerReporteCobranza(
+      let data = await obtenerReporteCobranza(
         fechaDesde || undefined,
         fechaHasta || undefined,
         gestorSeleccionado || undefined,
         facturaFilter !== '' ? (facturaFilter === 'true' ? true : false) : undefined,
         estadoClienteFilter || undefined
       );
+      // Filtrar cobranza excluyendo gestor condonar
+      if (excluirCondonar) {
+        data = data.filter(r => r.gestor_nombre?.toLowerCase() !== 'condonar');
+      }
       setReporteCobranza(data);
     } else {
-      const data = await obtenerReportePagosCobrar(
+      let data = await obtenerReportePagosCobrar(
         fechaDesde || undefined,
         fechaHasta || undefined,
         gestorSeleccionado || undefined,
         estadoPagoFilter || undefined
       );
+      // Filtrar pagos excluyendo gestor condonar
+      if (excluirCondonar) {
+        data = data.filter(r => r.gestor_nombre?.toLowerCase() !== 'condonar');
+      }
       setReportePagos(data);
     }
   };
@@ -61,11 +70,12 @@ export default function ReportesPage() {
     setEstadoPagoFilter('');
     setFacturaFilter('');
     setEstadoClienteFilter('');
+    setExcluirCondonar(true);
   };
 
   const descargarReporte = () => {
     if (activeTab === 'cobranza') {
-      const datosFormato = reporteCobranza.map(r => ({
+      const datosFormato = reporteCobranzaFiltrado.map(r => ({
         'Fecha Pago': r.fecha_pago,
         'Contrato': r.numero_contrato,
         'Cliente': r.cliente_nombre,
@@ -78,7 +88,7 @@ export default function ReportesPage() {
       }));
       exportarExcel(datosFormato, 'Reporte_Cobranza', 'Cobranza');
     } else {
-      const datosFormato = reportePagos.map(r => ({
+      const datosFormato = reportePagosFiltrado.map(r => ({
         'Cliente': r.cliente_nombre,
         'Cargo': r.cargo,
         'Cuota': r.numero_pago,
@@ -94,8 +104,17 @@ export default function ReportesPage() {
     }
   };
 
-  const totalCobranza = reporteCobranza.reduce((sum, r) => sum + r.monto_pagado, 0);
-  const totalPagosCobrar = reportePagos.reduce((sum, r) => sum + r.monto_programado, 0);
+  // Calcular totales aplicando filtro de condonar
+  const reporteCobranzaFiltrado = excluirCondonar 
+    ? reporteCobranza.filter(r => r.gestor_nombre?.toLowerCase() !== 'condonar')
+    : reporteCobranza;
+  
+  const reportePagosFiltrado = excluirCondonar
+    ? reportePagos.filter(r => r.gestor_nombre?.toLowerCase() !== 'condonar')
+    : reportePagos;
+
+  const totalCobranza = reporteCobranzaFiltrado.reduce((sum, r) => sum + r.monto_pagado, 0);
+  const totalPagosCobrar = reportePagosFiltrado.reduce((sum, r) => sum + r.monto_programado, 0);
 
   return (
     <div className="space-y-2">
@@ -212,6 +231,20 @@ export default function ReportesPage() {
                   <option value="liquidado">Liquidado</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  &nbsp;
+                </label>
+                <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={excluirCondonar}
+                    onChange={(e) => setExcluirCondonar(e.target.checked)}
+                    className="w-4 h-4 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  Excluir Condonar
+                </label>
+              </div>
             </>
           )}
 
@@ -300,14 +333,14 @@ export default function ReportesPage() {
                       Cargando...
                     </td>
                   </tr>
-                ) : reporteCobranza.length === 0 ? (
+                ) : reporteCobranzaFiltrado.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Presiona "Cargar" para ver los datos
                     </td>
                   </tr>
                 ) : (
-                  reporteCobranza.map((r, idx) => (
+                  reporteCobranzaFiltrado.map((r, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-xs text-gray-900">{formatDate(r.fecha_pago)}</td>
                       <td className="px-3 py-2 text-xs text-gray-600">{r.numero_contrato}</td>
@@ -369,14 +402,14 @@ export default function ReportesPage() {
                       Cargando...
                     </td>
                   </tr>
-                ) : reportePagos.length === 0 ? (
+                ) : reportePagosFiltrado.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-3 py-2 text-center text-gray-600 text-xs">
                       Presiona "Cargar" para ver los datos
                     </td>
                   </tr>
                 ) : (
-                  reportePagos.map((r, idx) => (
+                  reportePagosFiltrado.map((r, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-xs font-medium text-gray-900">{r.cliente_nombre}</td>
                       <td className="px-3 py-2 text-xs text-gray-600">{r.cargo}</td>
